@@ -8,6 +8,8 @@ class Post {
   final int likesCount;
   final int commentsCount;
   final bool isLiked;
+  final bool isFollowingAuthor;
+  final bool isMyPost;
   final DateTime createdAt;
 
   Post({
@@ -20,6 +22,8 @@ class Post {
     required this.likesCount,
     required this.commentsCount,
     required this.isLiked,
+    required this.isFollowingAuthor,
+    required this.isMyPost,
     required this.createdAt,
   });
 
@@ -35,6 +39,8 @@ class Post {
       likesCount: json['likes_count'] ?? 0,
       commentsCount: json['comments_count'] ?? 0,
       isLiked: json['is_liked'] ?? false,
+      isFollowingAuthor: json['is_following_author'] ?? false,
+      isMyPost: json['is_my_post'] ?? false,
       createdAt: DateTime.parse(json['created_at']),
     );
   }

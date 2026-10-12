@@ -6,6 +6,8 @@ class User {
   final String niveau;
   final String? photo;
   final String bio;
+  final int followersCount;
+  final int followingCount;
 
   User({
     required this.id,
@@ -15,6 +17,8 @@ class User {
     required this.niveau,
     this.photo,
     required this.bio,
+    this.followersCount = 0,
+    this.followingCount = 0,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -26,6 +30,8 @@ class User {
       niveau: json['niveau'] ?? '',
       photo: json['photo'],
       bio: json['bio'] ?? '',
+      followersCount: json['followers_count'] ?? 0,
+      followingCount: json['following_count'] ?? 0,
     );
   }
 }

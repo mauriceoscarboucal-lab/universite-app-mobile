@@ -5,6 +5,8 @@ import '../models/post.dart';
 import '../services/post_service.dart';
 import '../screens/comments_screen.dart';
 import 'package:flutter/services.dart';
+import '../screens/user_profile_screen.dart';
+import '../services/user_service.dart';
 
 class PostCard extends StatefulWidget {
   final Post post;
@@ -22,6 +24,9 @@ class _PostCardState extends State<PostCard> {
   bool _isLoadingLike = false;
   bool _isSaved = false;
 
+  late bool _isFollowingAuthor;
+  bool _isFollowLoading = false;
+
   static const String _savedPostsKey = 'saved_posts';
 
   @override
@@ -29,6 +34,7 @@ class _PostCardState extends State<PostCard> {
     super.initState();
     _isLiked = widget.post.isLiked;
     _likesCount = widget.post.likesCount;
+    _isFollowingAuthor = widget.post.isFollowingAuthor;
     _checkIfSaved();
   }
 
@@ -110,6 +116,64 @@ class _PostCardState extends State<PostCard> {
     );
   }
 
+    Future<void> _toggleFollow() async {
+    if (_isFollowLoading) return;
+    setState(() => _isFollowLoading = true);
+
+    // Optimistic update
+    setState(() => _isFollowingAuthor = !_isFollowingAuthor);
+
+    final result = await UserService.toggleFollow(widget.post.author);
+
+    if (!mounted) return;
+
+    if (result['success'] == true) {
+      final isNowFollowing = result['data']['status'] == 'followed';
+      setState(() {
+        _isFollowingAuthor = isNowFollowing;
+        _isFollowLoading = false;
+      });
+
+      // ✨ Animation : SnackBar stylée
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                isNowFollowing ? Icons.check_circle : Icons.info_outline,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                isNowFollowing
+                    ? 'Tu suis maintenant @${widget.post.authorUsername}'
+                    : 'Tu ne suis plus @${widget.post.authorUsername}',
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+          backgroundColor:
+              isNowFollowing ? Colors.green[600] : Colors.grey[700],
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(12),
+        ),
+      );
+
+      // Rafraîchit le feed après un petit délai pour que le bouton disparaisse joliment
+      await Future.delayed(const Duration(milliseconds: 400));
+      if (mounted) widget.onRefresh();
+    } else {
+      setState(() {
+        _isFollowingAuthor = !_isFollowingAuthor;
+        _isFollowLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final post = widget.post;
@@ -127,44 +191,105 @@ class _PostCardState extends State<PostCard> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               children: [
-                // Avatar
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: const Color(0xFF1E40AF),
-                  child: Text(
-                    post.authorUsername.isNotEmpty
-                        ? post.authorUsername[0].toUpperCase()
-                        : '?',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                                // Avatar (cliquable)
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => UserProfileScreen(userId: post.author),
+                      ),
+                    );
+                  },
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: const Color(0xFF1E40AF),
+                    child: Text(
+                      post.authorUsername.isNotEmpty
+                          ? post.authorUsername[0].toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 10),
 
-                // Pseudo + temps
+                                // Pseudo + temps (cliquable) + bouton Suivre
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        post.authorUsername,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              UserProfileScreen(userId: post.author),
                         ),
-                      ),
-                      Text(
-                        timeAgo,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
+                      );
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          post.authorUsername,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
                         ),
-                      ),
-                    ],
+                        Text(
+                          timeAgo,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
+
+                // Bouton Suivre (visible uniquement si :
+                // - on ne suit pas encore
+                // - ce n'est PAS notre propre post)
+                if (!_isFollowingAuthor && !widget.post.isMyPost)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      child: TextButton(
+                        onPressed: _isFollowLoading ? null : _toggleFollow,
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFF1E40AF),
+                          backgroundColor:
+                              const Color(0xFF1E40AF).withOpacity(0.08),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 6,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        child: _isFollowLoading
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text(
+                                'Suivre',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ),
 
                 // Menu 3 points
                 IconButton(
