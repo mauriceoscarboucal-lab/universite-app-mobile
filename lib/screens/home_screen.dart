@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/post.dart';
 import '../services/auth_service.dart';
 import '../services/post_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/post_card.dart';
 import '../widgets/stories_bar.dart';
 import 'login_screen.dart';
@@ -18,11 +19,18 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Post> _posts = [];
   bool _isLoading = true;
   String? _error;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _loadPosts();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadPosts() async {
@@ -71,79 +79,123 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openCreatePost,
-        backgroundColor: const Color(0xFF1E40AF),
-        child: const Icon(Icons.add, color: Colors.white),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 90),
+        child: FloatingActionButton(
+          onPressed: _openCreatePost,
+          backgroundColor: AppTheme.green,
+          elevation: 4,
+          child: const Icon(Icons.add, color: Colors.white, size: 28),
+        ),
       ),
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          // ─── APPBAR + STORIES QUI SE CACHE AU SCROLL ──
-          SliverAppBar(
-            backgroundColor: const Color(0xFF1E40AF),
-            foregroundColor: Colors.white,
-            floating: true,
-            snap: true,
-            pinned: false,
-            elevation: 2,
-            title: const Text('Université App'),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: _loadPosts,
+      body: RefreshIndicator(
+        onRefresh: _loadPosts,
+        color: AppTheme.green,
+        backgroundColor: Colors.white,
+        child: CustomScrollView(
+          controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          slivers: [
+            // ─── APPBAR (disparaît au scroll, revient seulement tout en haut) ───
+            SliverAppBar(
+              floating: false,
+              pinned: false,
+              snap: false,
+              elevation: 0,
+              backgroundColor: AppTheme.blue,
+              foregroundColor: Colors.white,
+              title: const Text(
+                'Baobab',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                  color: Colors.white,
+                ),
               ),
-            ],
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(110),
+              flexibleSpace: Container(
+                decoration: const BoxDecoration(
+                  gradient: AppTheme.gradient,
+                ),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  onPressed: _loadPosts,
+                ),
+              ],
+            ),
+
+            // ─── STORIES (disparaît avec l'AppBar) ───
+            SliverToBoxAdapter(
               child: Container(
                 color: Colors.white,
                 child: const StoriesBar(),
               ),
             ),
-          ),
-        ],
-        body: _buildFeedContent(),
+
+            // ─── CONTENU ───
+            ..._buildContentSlivers(),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildFeedContent() {
+  /// Renvoie les slivers correspondant au contenu (loading / erreur / vide / liste)
+  List<Widget> _buildContentSlivers() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return [
+        const SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ];
     }
 
     if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text('Erreur : $_error'),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadPosts,
-              child: const Text('Réessayer'),
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Erreur : $_error'),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _loadPosts,
+                  child: const Text('Réessayer'),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      );
+      ];
     }
 
     if (_posts.isEmpty) {
-      return const Center(child: Text('Aucun post pour l\'instant'));
+      return [
+        const SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(child: Text('Aucun post pour l\'instant')),
+        ),
+      ];
     }
 
-    return RefreshIndicator(
-      onRefresh: _loadPosts,
-      child: ListView.builder(
-        padding: EdgeInsets.zero,
-        itemCount: _posts.length,
-        itemBuilder: (context, index) {
-          return PostCard(
-            post: _posts[index],
-            onRefresh: _loadPosts,
-          );
-        },
+    return [
+      SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            return PostCard(
+              post: _posts[index],
+              onRefresh: _loadPosts,
+            );
+          },
+          childCount: _posts.length,
+        ),
       ),
-    );
+    ];
   }
 }

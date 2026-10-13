@@ -5,6 +5,8 @@ class Post {
   final String? authorPhoto;
   final String content;
   final String? image;
+  final List<String> images;
+  final String backgroundColor;
   final int likesCount;
   final int commentsCount;
   final bool isLiked;
@@ -19,6 +21,8 @@ class Post {
     this.authorPhoto,
     required this.content,
     this.image,
+    this.images = const [],
+    this.backgroundColor = '',
     required this.likesCount,
     required this.commentsCount,
     required this.isLiked,
@@ -28,7 +32,7 @@ class Post {
   });
 
   /// Crée un Post à partir du JSON renvoyé par l'API Django
-  factory Post.fromJson(Map<String, dynamic> json) {
+    factory Post.fromJson(Map<String, dynamic> json) {
     return Post(
       id: json['id'],
       author: json['author'],
@@ -36,6 +40,10 @@ class Post {
       authorPhoto: json['author_photo'],
       content: json['content'] ?? '',
       image: json['image'],
+      images: json['images'] != null
+          ? List<String>.from(json['images'])
+          : [],
+      backgroundColor: json['background_color'] ?? '',    // <-- AJOUTE
       likesCount: json['likes_count'] ?? 0,
       commentsCount: json['comments_count'] ?? 0,
       isLiked: json['is_liked'] ?? false,

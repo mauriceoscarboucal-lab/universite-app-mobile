@@ -4,6 +4,7 @@ import '../models/user.dart';
 import '../services/user_service.dart';
 import '../widgets/post_card.dart';
 import 'follow_list_screen.dart';
+import '../theme/app_theme.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final int userId;
@@ -119,7 +120,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('@${user.username}'),
-        backgroundColor: const Color(0xFF1E40AF),
+        backgroundColor: AppTheme.green,
         foregroundColor: Colors.white,
       ),
       body: RefreshIndicator(
@@ -135,7 +136,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   // Avatar
                   CircleAvatar(
                     radius: 50,
-                    backgroundColor: const Color(0xFF1E40AF),
+                    backgroundColor: AppTheme.green,
                     child: Text(
                       user.username.isNotEmpty
                           ? user.username[0].toUpperCase()

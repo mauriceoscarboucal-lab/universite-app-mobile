@@ -3,6 +3,7 @@ import '../models/story.dart';
 import '../services/story_service.dart';
 import '../screens/create_story_screen.dart';
 import '../screens/story_viewer_screen.dart';
+import '../theme/app_theme.dart';
 
 class StoriesBar extends StatefulWidget {
   const StoriesBar({super.key});
@@ -110,7 +111,7 @@ class _StoriesBarState extends State<StoriesBar> {
               child: const Icon(
                 Icons.add,
                 size: 32,
-                color: Color(0xFF1E40AF),
+                color: AppTheme.green,
               ),
             ),
             const SizedBox(height: 4),
@@ -143,17 +144,7 @@ class _StoriesBarState extends State<StoriesBar> {
               height: 68,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFFF09433),
-                    Color(0xFFE6683C),
-                    Color(0xFFDC2743),
-                    Color(0xFFCC2366),
-                    Color(0xFFBC1888),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                gradient: AppTheme.storyGradient,
               ),
               child: Padding(
                 padding: const EdgeInsets.all(3),
@@ -165,7 +156,7 @@ class _StoriesBarState extends State<StoriesBar> {
                   child: Padding(
                     padding: const EdgeInsets.all(2),
                     child: CircleAvatar(
-                      backgroundColor: const Color(0xFF1E40AF),
+                      backgroundColor: AppTheme.green,
                       child: Text(
                         group.authorUsername.isNotEmpty
                             ? group.authorUsername[0].toUpperCase()

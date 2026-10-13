@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/story_service.dart';
+import '../theme/app_theme.dart';
 
 class CreateStoryScreen extends StatefulWidget {
   const CreateStoryScreen({super.key});
@@ -70,7 +71,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Nouvelle story'),
-        backgroundColor: const Color(0xFF1E40AF),
+        backgroundColor: AppTheme.green,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -177,7 +178,7 @@ class _CreateStoryScreenState extends State<CreateStoryScreen> {
                     : const Icon(Icons.send),
                 label: Text(_isLoading ? 'Publication...' : 'Publier ma story'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1E40AF),
+                  backgroundColor: AppTheme.green,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

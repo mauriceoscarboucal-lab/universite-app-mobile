@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
 import 'saved_posts_screen.dart';
+import '../theme/app_theme.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -41,7 +42,7 @@ class SettingsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Paramètres et activité'),
-        backgroundColor: const Color(0xFF1E40AF),
+        backgroundColor: AppTheme.green,
         foregroundColor: Colors.white,
       ),
       body: ListView(

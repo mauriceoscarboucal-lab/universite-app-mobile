@@ -55,29 +55,27 @@ class PostService {
       return {'success': false, 'error': '$e'};
     }
   }
-      /// Crée un nouveau post avec ou sans image
-    static Future<Map<String, dynamic>> createPost(
+      /// Crée un nouveau post (avec 0, 1 ou plusieurs images)
+  static Future<Map<String, dynamic>> createPost(
     String content, {
     Uint8List? imageBytes,
     String? imageName,
+    List<Uint8List>? multipleImages,      // <-- AJOUTE
+    List<String>? multipleNames,           // <-- AJOUTE
+    String backgroundColor = '',
   }) async {
     try {
       final token = await AuthService.getToken();
       if (token == null) return {'success': false, 'error': 'Non connecté'};
 
-      // On prépare la requête multipart (obligatoire pour envoyer un fichier)
       final uri = Uri.parse(ApiConfig.posts);
       final request = http.MultipartRequest('POST', uri);
-
-      // Header d'autorisation
       request.headers['Authorization'] = 'Bearer $token';
-
-      // Champs texte
       request.fields['content'] = content;
+      request.fields['background_color'] = backgroundColor;
 
-            // Si une image est fournie → on l'ajoute
+      // Cas 1 : une seule image
       if (imageBytes != null) {
-        // Cas Web (bytes)
         request.files.add(
           http.MultipartFile.fromBytes(
             'image',
@@ -87,7 +85,21 @@ class PostService {
         );
       }
 
-      // Envoi
+      // Cas 2 : plusieurs images
+      if (multipleImages != null && multipleImages.isNotEmpty) {
+        for (int i = 0; i < multipleImages.length; i++) {
+          request.files.add(
+            http.MultipartFile.fromBytes(
+              'images',
+              multipleImages[i],
+              filename: (multipleNames != null && i < multipleNames.length)
+                  ? multipleNames[i]
+                  : 'image_$i.jpg',
+            ),
+          );
+        }
+      }
+
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
@@ -173,6 +185,26 @@ class PostService {
 
       if (response.statusCode == 200) {
         return {'success': true, 'data': jsonDecode(response.body)};
+      }
+      return {'success': false, 'error': 'Erreur ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'error': 'Erreur réseau : $e'};
+    }
+  }
+
+    /// Supprime un post (seulement si c'est le mien)
+  static Future<Map<String, dynamic>> deletePost(int postId) async {
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) return {'success': false, 'error': 'Non connecté'};
+
+      final response = await http.delete(
+        Uri.parse('${ApiConfig.posts}$postId/'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 204 || response.statusCode == 200) {
+        return {'success': true};
       }
       return {'success': false, 'error': 'Erreur ${response.statusCode}'};
     } catch (e) {

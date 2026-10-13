@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/post.dart';
 import '../services/post_service.dart';
 import '../widgets/post_card.dart';
+import '../theme/app_theme.dart';
 
 class SavedPostsScreen extends StatefulWidget {
   const SavedPostsScreen({super.key});
@@ -61,7 +62,7 @@ class _SavedPostsScreenState extends State<SavedPostsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Posts enregistrés'),
-        backgroundColor: const Color(0xFF1E40AF),
+        backgroundColor: AppTheme.green,
         foregroundColor: Colors.white,
       ),
       body: _isLoading

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../services/user_service.dart';
 import 'user_profile_screen.dart';
+import '../theme/app_theme.dart';
 
 class FollowListScreen extends StatefulWidget {
   final int userId;
@@ -48,7 +49,7 @@ class _FollowListScreenState extends State<FollowListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        backgroundColor: const Color(0xFF1E40AF),
+        backgroundColor: AppTheme.green,
         foregroundColor: Colors.white,
       ),
       body: _isLoading
@@ -68,7 +69,7 @@ class _FollowListScreenState extends State<FollowListScreen> {
                     final u = _users[index];
                     return ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: const Color(0xFF1E40AF),
+                        backgroundColor: AppTheme.green,
                         child: Text(
                           u.username.isNotEmpty
                               ? u.username[0].toUpperCase()

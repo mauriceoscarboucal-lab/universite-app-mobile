@@ -1,7 +1,7 @@
 /// Configuration de l'API Django
 class ApiConfig {
   // Adresse de ton backend Django
-  static const String baseUrl = 'http://192.168.1.3:8000/api';
+  static const String baseUrl = 'http://127.0.0.1:8000/api';
 
   // Endpoints auth
   static const String register = '$baseUrl/auth/register/';

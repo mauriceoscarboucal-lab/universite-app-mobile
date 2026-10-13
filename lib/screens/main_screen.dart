@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'profile_screen.dart';
 import 'settings_screen.dart';
+import '../theme/app_theme.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -41,7 +42,7 @@ class _MainScreenState extends State<MainScreen> {
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           height: 65,
           decoration: BoxDecoration(
-            color: const Color(0xFF1E40AF),
+            gradient: AppTheme.gradient,
             borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
@@ -92,7 +93,7 @@ class _MainScreenState extends State<MainScreen> {
           children: [
             Icon(
               isSelected ? filledIcon : outlineIcon,
-              color: isSelected ? const Color(0xFF1E40AF) : Colors.white,
+              color: isSelected ? AppTheme.green : Colors.white,
               size: 24,
             ),
             if (isSelected) ...[
@@ -100,7 +101,7 @@ class _MainScreenState extends State<MainScreen> {
               Text(
                 label,
                 style: const TextStyle(
-                  color: Color(0xFF1E40AF),
+                  color: AppTheme.green,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                 ),

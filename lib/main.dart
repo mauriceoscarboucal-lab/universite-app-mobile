@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const UniversiteApp());
@@ -11,13 +12,9 @@ class UniversiteApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Université App',
+      title: 'Baobab',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1E40AF)),
-        useMaterial3: true,
-        fontFamily: 'Roboto',
-      ),
+      theme: AppTheme.themeData,
       home: const LoginScreen(),
     );
   }

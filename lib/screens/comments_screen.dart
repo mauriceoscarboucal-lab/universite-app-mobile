@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/comment.dart';
 import '../models/post.dart';
 import '../services/post_service.dart';
+import '../theme/app_theme.dart';
 
 class CommentsScreen extends StatefulWidget {
   final Post post;
@@ -74,7 +75,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Commentaires'),
-        backgroundColor: const Color(0xFF1E40AF),
+        backgroundColor: AppTheme.green,
         foregroundColor: Colors.white,
       ),
       body: Column(
@@ -113,7 +114,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                               final c = _comments[index];
                               return ListTile(
                                 leading: CircleAvatar(
-                                  backgroundColor: const Color(0xFF1E40AF),
+                                  backgroundColor: AppTheme.green,
                                   child: Text(
                                     c.authorUsername.isNotEmpty
                                         ? c.authorUsername[0].toUpperCase()
@@ -161,7 +162,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Icon(Icons.send, color: Color(0xFF1E40AF)),
+                      : const Icon(Icons.send, color: AppTheme.green),
                 ),
               ],
             ),

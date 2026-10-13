@@ -7,6 +7,7 @@ import '../widgets/post_card.dart';
 import 'saved_posts_screen.dart';
 import 'settings_screen.dart';
 import 'follow_list_screen.dart';
+import '../theme/app_theme.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -178,10 +179,15 @@ class _ProfileScreenState extends State<ProfileScreen>
     final user = _user!;
 
     return Scaffold(
-      appBar: AppBar(
+       appBar: AppBar(
         title: Text(user.username),
-        backgroundColor: const Color(0xFF1E40AF),
+        backgroundColor: AppTheme.blue,
         foregroundColor: Colors.white,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: AppTheme.gradient,
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -199,9 +205,9 @@ class _ProfileScreenState extends State<ProfileScreen>
               delegate: _TabBarDelegate(
                 TabBar(
                   controller: _tabController,
-                  labelColor: const Color(0xFF1E40AF),
+                  labelColor: AppTheme.green,
                   unselectedLabelColor: Colors.grey,
-                  indicatorColor: const Color(0xFF1E40AF),
+                  indicatorColor: AppTheme.green,
                   tabs: const [
                     Tab(icon: Icon(Icons.grid_on)),
                     Tab(icon: Icon(Icons.bookmark_border)),
@@ -271,7 +277,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             children: [
               CircleAvatar(
                 radius: 40,
-                backgroundColor: const Color(0xFF1E40AF),
+                backgroundColor: AppTheme.green,
                 child: Text(
                   user.username.isNotEmpty
                       ? user.username[0].toUpperCase()
@@ -416,7 +422,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   child: ElevatedButton(
                     onPressed: _isSaving ? null : _saveProfile,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1E40AF),
+                      backgroundColor: AppTheme.green,
                       foregroundColor: Colors.white,
                     ),
                     child: _isSaving
