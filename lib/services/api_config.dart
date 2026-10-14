@@ -18,6 +18,8 @@ class ApiConfig {
   static String userFollowers(int userId) => '$baseUrl/auth/users/$userId/followers/';
   static String userFollowing(int userId) => '$baseUrl/auth/users/$userId/following/';
   static String storyDetail(int id) => '$baseUrl/stories/$id/';
+  static String storyView(int id) => '$baseUrl/stories/$id/view/';
+  static String storyViewers(int id) => '$baseUrl/stories/$id/viewers/';
 
   // Clés de stockage local
   static const String tokenKey = 'access_token';

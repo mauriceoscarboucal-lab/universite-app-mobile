@@ -90,4 +90,48 @@ class StoryService {
       return {'success': false, 'error': 'Erreur réseau : $e'};
     }
   }
+
+  /// Marque une story comme vue
+  static Future<Map<String, dynamic>> markViewed(int storyId) async {
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) return {'success': false};
+
+      final response = await http.post(
+        Uri.parse(ApiConfig.storyView(storyId)),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': jsonDecode(response.body)};
+      }
+      return {'success': false};
+    } catch (e) {
+      return {'success': false, 'error': '$e'};
+    }
+  }
+
+  /// Récupère la liste des utilisateurs qui ont vu une story
+  static Future<Map<String, dynamic>> getViewers(int storyId) async {
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) return {'success': false, 'error': 'Non connecté'};
+
+      final response = await http.get(
+        Uri.parse(ApiConfig.storyViewers(storyId)),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        final viewers =
+            data.map((json) => StoryViewer.fromJson(json)).toList();
+        return {'success': true, 'viewers': viewers};
+      }
+      return {'success': false, 'error': 'Erreur ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'error': 'Erreur réseau : $e'};
+    }
+  }
+
 }

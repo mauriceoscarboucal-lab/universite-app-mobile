@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/story.dart';
+import '../services/auth_service.dart';
 import '../services/story_service.dart';
 import '../screens/create_story_screen.dart';
 import '../screens/story_viewer_screen.dart';
@@ -14,23 +15,53 @@ class StoriesBar extends StatefulWidget {
 
 class _StoriesBarState extends State<StoriesBar> {
   List<StoryGroup> _groups = [];
+  StoryGroup? _myGroup;
+  int _myUserId = 0;
+  String _myUsername = '';
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadStories();
+    _loadAll();
   }
 
-  Future<void> _loadStories() async {
+    Future<void> _loadAll() async {
     setState(() => _isLoading = true);
 
+    final myId = await AuthService.getUserId();
+    final profileResult = await AuthService.getProfile();
     final result = await StoryService.getStories();
 
     if (!mounted) return;
 
+    String myUsername = '';
+    if (profileResult['success'] == true) {
+      myUsername = profileResult['user'].username ?? '';
+    }
+
+    if (!mounted) return;
+
+    final groups = result['success'] == true
+        ? result['groups'] as List<StoryGroup>
+        : <StoryGroup>[];
+
+    // On sépare MON groupe des autres
+    StoryGroup? myGroup;
+    final others = <StoryGroup>[];
+    for (final g in groups) {
+      if (g.authorId == myId) {
+        myGroup = g;
+      } else {
+        others.add(g);
+      }
+    }
+
     setState(() {
-      _groups = result['success'] == true ? result['groups'] : [];
+      _myUserId = myId;
+      _myUsername = myUsername;
+      _myGroup = myGroup;
+      _groups = others;
       _isLoading = false;
     });
   }
@@ -41,8 +72,21 @@ class _StoriesBarState extends State<StoriesBar> {
       MaterialPageRoute(builder: (_) => const CreateStoryScreen()),
     );
     if (created == true) {
-      _loadStories();
+      _loadAll();
     }
+  }
+
+  void _openMyStory() {
+    if (_myGroup == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => StoryViewerScreen(
+          groups: [_myGroup!, ..._groups],
+          initialGroupIndex: 0,
+        ),
+      ),
+    ).then((_) => _loadAll());
   }
 
   void _openStory(int index) {
@@ -54,7 +98,7 @@ class _StoriesBarState extends State<StoriesBar> {
           initialGroupIndex: index,
         ),
       ),
-    ).then((_) => _loadStories());
+    ).then((_) => _loadAll());
   }
 
   @override
@@ -63,9 +107,7 @@ class _StoriesBarState extends State<StoriesBar> {
       height: 110,
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Colors.grey[200]!),
-        ),
+        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
       ),
       child: _isLoading
           ? const Center(
@@ -78,20 +120,21 @@ class _StoriesBarState extends State<StoriesBar> {
           : ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              itemCount: _groups.length + 1, // +1 pour le bouton "Créer"
+              itemCount: _groups.length + 1,
               itemBuilder: (context, index) {
-                // Premier item : bouton "Ajouter une story"
                 if (index == 0) {
-                  return _buildAddStoryButton();
+                  // Premier item : Ma story (ou bouton + si pas de story)
+                  return _myGroup == null
+                      ? _buildAddStoryButton()
+                      : _buildMyStoryWithAdd();
                 }
-                // Les autres : les stories des utilisateurs
-                final group = _groups[index - 1];
-                return _buildStoryCircle(group, index - 1);
+                return _buildStoryCircle(_groups[index - 1], index - 1);
               },
             ),
     );
   }
 
+  /// Cas 1 : je n'ai PAS de story → bouton "Ma story" avec grand +
   Widget _buildAddStoryButton() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -108,11 +151,7 @@ class _StoriesBarState extends State<StoriesBar> {
                 border: Border.all(color: Colors.grey[300]!, width: 2),
                 color: Colors.grey[100],
               ),
-              child: const Icon(
-                Icons.add,
-                size: 32,
-                color: AppTheme.green,
-              ),
+              child: const Icon(Icons.add, size: 32, color: AppTheme.green),
             ),
             const SizedBox(height: 4),
             const SizedBox(
@@ -130,6 +169,93 @@ class _StoriesBarState extends State<StoriesBar> {
     );
   }
 
+  /// Cas 2 : j'ai une story → mon avatar + petit +
+  Widget _buildMyStoryWithAdd() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 68,
+            height: 68,
+            child: Stack(
+              children: [
+                // Avatar avec dégradé
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: _openMyStory,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: AppTheme.storyGradient,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(3),
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(2),
+                            child: CircleAvatar(
+                              backgroundColor: AppTheme.green,
+                              child: Text(
+                                _myUsername.isNotEmpty
+                                    ? _myUsername[0].toUpperCase()
+                                    : 'M',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 22,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Petit + en bas à droite pour ajouter une autre story
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: GestureDetector(
+                    onTap: _openCreateStory,
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: AppTheme.green,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: const Icon(Icons.add,
+                          color: Colors.white, size: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 4),
+          const SizedBox(
+            width: 70,
+            child: Text(
+              'Ma story',
+              style: TextStyle(fontSize: 12),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStoryCircle(StoryGroup group, int index) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -138,13 +264,14 @@ class _StoriesBarState extends State<StoriesBar> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Cercle dégradé autour de l'avatar
+            // Cercle dégradé ou gris selon si vu
             Container(
               width: 68,
               height: 68,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: AppTheme.storyGradient,
+                gradient: group.allViewed ? null : AppTheme.storyGradient,
+                color: group.allViewed ? Colors.grey[400] : null,
               ),
               child: Padding(
                 padding: const EdgeInsets.all(3),
@@ -156,7 +283,8 @@ class _StoriesBarState extends State<StoriesBar> {
                   child: Padding(
                     padding: const EdgeInsets.all(2),
                     child: CircleAvatar(
-                      backgroundColor: AppTheme.green,
+                      backgroundColor:
+                          group.allViewed ? Colors.grey[500] : AppTheme.green,
                       child: Text(
                         group.authorUsername.isNotEmpty
                             ? group.authorUsername[0].toUpperCase()

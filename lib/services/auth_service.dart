@@ -7,7 +7,7 @@ import 'api_config.dart';
 /// Service qui gère l'authentification (login, register, token)
 class AuthService {
   /// Connexion : envoie email + password, stocke le token
-  static Future<Map<String, dynamic>> login(String email, String password) async {
+    static Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       final response = await http.post(
         Uri.parse(ApiConfig.login),
@@ -21,6 +21,26 @@ class AuthService {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(ApiConfig.tokenKey, data['access']);
         await prefs.setString(ApiConfig.refreshKey, data['refresh']);
+
+        // Décode le JWT pour récupérer l'ID utilisateur
+                try {
+          final parts = data['access'].split('.');
+          if (parts.length == 3) {
+            final payload = utf8.decode(
+              base64Url.decode(base64Url.normalize(parts[1])),
+            );
+            final payloadData = jsonDecode(payload);
+            final userId = payloadData['user_id'];
+            if (userId != null) {
+              // ⚠️ Conversion en int obligatoire (JWT renvoie une String)
+              await prefs.setInt('user_id', int.parse(userId.toString()));
+            }
+          }
+        } catch (e) {
+          // Log pour debug
+          print('Erreur décodage JWT: $e');
+        }
+
         return {'success': true, 'data': data};
       } else {
         return {'success': false, 'error': 'Email ou mot de passe incorrect'};
@@ -28,6 +48,12 @@ class AuthService {
     } catch (e) {
       return {'success': false, 'error': 'Erreur réseau : $e'};
     }
+  }
+
+  /// Récupère l'ID de l'utilisateur connecté (0 si non connecté)
+  static Future<int> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('user_id') ?? 0;
   }
 
   /// Inscription d'un nouvel étudiant

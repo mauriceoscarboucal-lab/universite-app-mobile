@@ -4,6 +4,7 @@ import 'package:timeago/timeago.dart' as timeago;
 import '../models/story.dart';
 import '../services/api_config.dart';
 import '../services/story_service.dart';
+import '../services/auth_service.dart';
 
 class StoryViewerScreen extends StatefulWidget {
   final List<StoryGroup> groups;
@@ -25,10 +26,11 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   late int _currentStoryIndex;
   late AnimationController _progressController;
   Timer? _autoNextTimer;
+  int _myUserId = 0;
 
   static const Duration _storyDuration = Duration(seconds: 30);
 
-  @override
+    @override
   void initState() {
     super.initState();
     _currentGroupIndex = widget.initialGroupIndex;
@@ -39,7 +41,13 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
       duration: _storyDuration,
     );
 
+    _loadMyId();                            // <-- AJOUTE
     _startStory();
+  }
+
+  Future<void> _loadMyId() async {          // <-- AJOUTE la méthode
+    final id = await AuthService.getUserId();
+    if (mounted) setState(() => _myUserId = id);
   }
 
   @override
@@ -52,9 +60,14 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   StoryGroup get _currentGroup => widget.groups[_currentGroupIndex];
   Story get _currentStory => _currentGroup.stories[_currentStoryIndex];
 
-  void _startStory() {
+    void _startStory() {
     _autoNextTimer?.cancel();
     _progressController.forward(from: 0);
+
+    // 📌 Marque cette story comme vue par moi (sauf si c'est la mienne)
+    if (_currentGroup.authorId != _myUserId) {
+      StoryService.markViewed(_currentStory.id);
+    }
 
     // Timer auto : à la fin, on passe à la story suivante
     _autoNextTimer = Timer(_storyDuration, () {
@@ -124,6 +137,27 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
         SnackBar(content: Text(result['error'] ?? 'Erreur')),
       );
     }
+  }
+
+    /// Ouvre la liste des personnes qui ont vu cette story
+  Future<void> _showViewersSheet() async {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        minChildSize: 0.4,
+        expand: false,
+        builder: (context, scrollController) => _ViewersSheet(
+          storyId: _currentStory.id,
+          scrollController: scrollController,
+        ),
+      ),
+    );
   }
 
   @override
@@ -295,11 +329,24 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
                       ],
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline,
-                        color: Colors.white),
-                    onPressed: _deleteCurrentStory,
-                  ),
+                                    // 👁️ Bouton "qui a vu" (uniquement si c'est ma story)
+                  if (_currentGroup.authorId == _myUserId)
+                    IconButton(
+                      icon: const Icon(Icons.visibility_outlined,
+                          color: Colors.white),
+                      tooltip: 'Qui a vu',
+                      onPressed: _showViewersSheet,
+                    ),
+
+                  // 🗑️ Supprimer (uniquement si c'est ma story)
+                  if (_currentGroup.authorId == _myUserId)
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline,
+                          color: Colors.white),
+                      onPressed: _deleteCurrentStory,
+                    ),
+
+                  // ✖️ Fermer
                   IconButton(
                     icon: const Icon(Icons.close, color: Colors.white),
                     onPressed: () => Navigator.pop(context),
@@ -333,6 +380,125 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
           ],
         ),
       ),
+    );
+  }
+}
+class _ViewersSheet extends StatefulWidget {
+  final int storyId;
+  final ScrollController scrollController;
+
+  const _ViewersSheet({
+    required this.storyId,
+    required this.scrollController,
+  });
+
+  @override
+  State<_ViewersSheet> createState() => _ViewersSheetState();
+}
+
+class _ViewersSheetState extends State<_ViewersSheet> {
+  List<StoryViewer> _viewers = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final result = await StoryService.getViewers(widget.storyId);
+    if (!mounted) return;
+    setState(() {
+      _viewers = result['success'] == true ? result['viewers'] : [];
+      _isLoading = false;
+      if (result['success'] != true) {
+        _error = result['error'] ?? 'Erreur';
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Barre grise
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 10),
+          width: 40,
+          height: 4,
+          decoration: BoxDecoration(
+            color: Colors.grey[300],
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.visibility, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                '${_viewers.length} vue${_viewers.length > 1 ? 's' : ''}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const Divider(height: 1),
+
+        Expanded(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _error != null
+                  ? Center(child: Text('Erreur : $_error'))
+                  : _viewers.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'Personne n\'a encore vu cette story',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: widget.scrollController,
+                          itemCount: _viewers.length,
+                          itemBuilder: (context, index) {
+                            final v = _viewers[index];
+                            return ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: const Color(0xFF00C853),
+                                child: Text(
+                                  v.username.isNotEmpty
+                                      ? v.username[0].toUpperCase()
+                                      : '?',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              title: Text(
+                                v.username,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Text(
+                                '${v.filiere}${v.niveau.isNotEmpty ? " · ${v.niveau}" : ""}',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            );
+                          },
+                        ),
+        ),
+      ],
     );
   }
 }

@@ -7,6 +7,8 @@ class Story {
   final String caption;
   final DateTime createdAt;
   final DateTime expiresAt;
+  final int viewsCount;
+  final bool isViewed;
 
   Story({
     required this.id,
@@ -17,6 +19,8 @@ class Story {
     required this.caption,
     required this.createdAt,
     required this.expiresAt,
+    this.viewsCount = 0,
+    this.isViewed = false,
   });
 
   factory Story.fromJson(Map<String, dynamic> json) {
@@ -29,6 +33,8 @@ class Story {
       caption: json['caption'] ?? '',
       createdAt: DateTime.parse(json['created_at']),
       expiresAt: DateTime.parse(json['expires_at']),
+      viewsCount: json['views_count'] ?? 0,
+      isViewed: json['is_viewed'] ?? false,
     );
   }
 }
@@ -39,12 +45,14 @@ class StoryGroup {
   final String authorUsername;
   final String? authorPhoto;
   final List<Story> stories;
+  final bool allViewed;
 
   StoryGroup({
     required this.authorId,
     required this.authorUsername,
     this.authorPhoto,
     required this.stories,
+    this.allViewed = false,
   });
 
   factory StoryGroup.fromJson(Map<String, dynamic> json) {
@@ -55,6 +63,40 @@ class StoryGroup {
       stories: (json['stories'] as List)
           .map((s) => Story.fromJson(s))
           .toList(),
+      allViewed: json['all_viewed'] ?? false,
+    );
+  }
+}
+
+/// Représente un utilisateur qui a vu une story
+class StoryViewer {
+  final int id;
+  final int userId;
+  final String username;
+  final String filiere;
+  final String niveau;
+  final String? photo;
+  final DateTime viewedAt;
+
+  StoryViewer({
+    required this.id,
+    required this.userId,
+    required this.username,
+    required this.filiere,
+    required this.niveau,
+    this.photo,
+    required this.viewedAt,
+  });
+
+  factory StoryViewer.fromJson(Map<String, dynamic> json) {
+    return StoryViewer(
+      id: json['id'],
+      userId: json['user_id'],
+      username: json['username'] ?? '',
+      filiere: json['filiere'] ?? '',
+      niveau: json['niveau'] ?? '',
+      photo: json['photo'],
+      viewedAt: DateTime.parse(json['viewed_at']),
     );
   }
 }

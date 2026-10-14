@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/post.dart';
 import '../services/auth_service.dart';
@@ -21,16 +22,41 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _error;
   final ScrollController _scrollController = ScrollController();
 
+  // ⏱️ Timer pour rafraîchir automatiquement (like en temps réel)
+  Timer? _refreshTimer;
+
   @override
   void initState() {
     super.initState();
     _loadPosts();
+    _startAutoRefresh();
   }
 
   @override
   void dispose() {
+    _refreshTimer?.cancel();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// Démarre le rafraîchissement auto toutes les 10 secondes
+  void _startAutoRefresh() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(
+      const Duration(seconds: 10),
+      (_) => _silentRefresh(),
+    );
+  }
+
+  /// Rafraîchit SANS afficher le loading (silencieux)
+  Future<void> _silentRefresh() async {
+    final result = await PostService.getPosts();
+    if (!mounted) return;
+    if (result['success'] == true) {
+      setState(() {
+        _posts = result['posts'];
+      });
+    }
   }
 
   Future<void> _loadPosts() async {
@@ -98,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
             parent: BouncingScrollPhysics(),
           ),
           slivers: [
-            // ─── APPBAR (disparaît au scroll, revient seulement tout en haut) ───
+            // ─── APPBAR ────────────────────────────────
             SliverAppBar(
               floating: false,
               pinned: false,
@@ -127,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
 
-            // ─── STORIES (disparaît avec l'AppBar) ───
+            // ─── STORIES ──────────────────────────────
             SliverToBoxAdapter(
               child: Container(
                 color: Colors.white,
@@ -135,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // ─── CONTENU ───
+            // ─── CONTENU ──────────────────────────────
             ..._buildContentSlivers(),
           ],
         ),
@@ -143,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Renvoie les slivers correspondant au contenu (loading / erreur / vide / liste)
+  /// Contenu principal (loading / erreur / vide / liste)
   List<Widget> _buildContentSlivers() {
     if (_isLoading) {
       return [
