@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
+import 'search_screen.dart';
+import 'conversations_screen.dart';
 import 'profile_screen.dart';
-import 'settings_screen.dart';
+import '../services/chat_service.dart';
 import '../theme/app_theme.dart';
 
 class MainScreen extends StatefulWidget {
@@ -13,26 +16,46 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  int _unreadCount = 0;
+  Timer? _badgeTimer;
 
   final List<Widget> _screens = const [
     HomeScreen(),
-    _PlaceholderScreen(
-      icon: Icons.search,
-      title: 'Recherche',
-      subtitle: 'Recherche d\'étudiants à venir',
-    ),
-    _PlaceholderScreen(
-      icon: Icons.chat_bubble_outline,
-      title: 'Messages',
-      subtitle: 'Messagerie à venir',
-    ),
+    SearchScreen(),
+    ConversationsScreen(),
     ProfileScreen(),
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadUnreadCount();
+    _startBadgeRefresh();
+  }
+
+  @override
+  void dispose() {
+    _badgeTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startBadgeRefresh() {
+    _badgeTimer?.cancel();
+    _badgeTimer = Timer.periodic(
+      const Duration(seconds: 10),
+      (_) => _loadUnreadCount(),
+    );
+  }
+
+  Future<void> _loadUnreadCount() async {
+    final count = await ChatService.getUnreadCount();
+    if (mounted) setState(() => _unreadCount = count);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true, // Pour que la barre flotte au-dessus
+      extendBody: true,
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
@@ -58,9 +81,13 @@ class _MainScreenState extends State<MainScreen> {
               _buildNavItem(0, Icons.home_outlined, Icons.home, 'Accueil'),
               _buildNavItem(1, Icons.search_outlined, Icons.search, 'Recherche'),
               _buildNavItem(
-                  2, Icons.chat_bubble_outline, Icons.chat_bubble, 'Messages'),
-              _buildNavItem(
-                  3, Icons.person_outline, Icons.person, 'Profil'),
+                2,
+                Icons.chat_bubble_outline,
+                Icons.chat_bubble,
+                'Messages',
+                badge: _unreadCount,
+              ),
+              _buildNavItem(3, Icons.person_outline, Icons.person, 'Profil'),
             ],
           ),
         ),
@@ -72,12 +99,17 @@ class _MainScreenState extends State<MainScreen> {
     int index,
     IconData outlineIcon,
     IconData filledIcon,
-    String label,
-  ) {
+    String label, {
+    int badge = 0,
+  }) {
     final isSelected = _currentIndex == index;
 
     return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () {
+        setState(() => _currentIndex = index);
+        // Quand on va sur Messages, on rafraîchit le compteur
+        if (index == 2) _loadUnreadCount();
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeInOut,
@@ -91,10 +123,41 @@ class _MainScreenState extends State<MainScreen> {
         ),
         child: Row(
           children: [
-            Icon(
-              isSelected ? filledIcon : outlineIcon,
-              color: isSelected ? AppTheme.green : Colors.white,
-              size: 24,
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  isSelected ? filledIcon : outlineIcon,
+                  color: isSelected ? AppTheme.green : Colors.white,
+                  size: 24,
+                ),
+                if (badge > 0)
+                  Positioned(
+                    right: -6,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      constraints: const BoxConstraints(minWidth: 18),
+                      child: Text(
+                        badge > 99 ? '99+' : '$badge',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
             ),
             if (isSelected) ...[
               const SizedBox(width: 6),
@@ -107,43 +170,6 @@ class _MainScreenState extends State<MainScreen> {
                 ),
               ),
             ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Écran placeholder
-class _PlaceholderScreen extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  const _PlaceholderScreen({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        backgroundColor: const Color(0xFF1E40AF),
-        foregroundColor: Colors.white,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 80, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              subtitle,
-              style: const TextStyle(color: Colors.grey, fontSize: 16),
-            ),
           ],
         ),
       ),

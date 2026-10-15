@@ -117,4 +117,30 @@ class UserService {
       return {'success': false, 'error': 'Erreur réseau : $e'};
     }
   }
+
+    /// Recherche des utilisateurs par nom
+  static Future<Map<String, dynamic>> searchUsers(String query) async {
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) return {'success': false, 'error': 'Non connecté'};
+
+      final uri = Uri.parse(ApiConfig.userSearch).replace(
+        queryParameters: {'q': query},
+      );
+
+      final response = await http.get(
+        uri,
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        final users = data.map((json) => User.fromJson(json)).toList();
+        return {'success': true, 'users': users};
+      }
+      return {'success': false, 'error': 'Erreur ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'error': 'Erreur réseau : $e'};
+    }
+  }
 }

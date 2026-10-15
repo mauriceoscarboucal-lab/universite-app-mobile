@@ -10,6 +10,7 @@ class ApiConfig {
   static const String posts = '$baseUrl/posts/';
   static const String stories = '$baseUrl/stories/';
   static const String myStories = '$baseUrl/stories/mine/';
+  static const String unreadCount = '$baseUrl/chat/unread-count/';
 
   // Endpoints utilisateurs
   static String userDetail(int userId) => '$baseUrl/auth/users/$userId/';
@@ -17,6 +18,7 @@ class ApiConfig {
   static String userPosts(int userId) => '$baseUrl/auth/users/$userId/posts/';
   static String userFollowers(int userId) => '$baseUrl/auth/users/$userId/followers/';
   static String userFollowing(int userId) => '$baseUrl/auth/users/$userId/following/';
+  static const String userSearch = '$baseUrl/auth/users/search/';
   static String storyDetail(int id) => '$baseUrl/stories/$id/';
   static String storyView(int id) => '$baseUrl/stories/$id/view/';
   static String storyViewers(int id) => '$baseUrl/stories/$id/viewers/';
@@ -24,6 +26,11 @@ class ApiConfig {
   // Clés de stockage local
   static const String tokenKey = 'access_token';
   static const String refreshKey = 'refresh_token';
+
+    // Endpoints messagerie
+  static const String conversations = '$baseUrl/chat/conversations/';
+  static String messages(int conversationId) =>
+      '$baseUrl/chat/conversations/$conversationId/messages/';
 
     /// Transforme une URL relative (ex: /media/stories/x.jpg) en URL complète
   static String fullUrl(String? relativeUrl) {
