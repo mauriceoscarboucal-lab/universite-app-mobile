@@ -8,6 +8,7 @@ import 'saved_posts_screen.dart';
 import 'settings_screen.dart';
 import 'follow_list_screen.dart';
 import '../theme/app_theme.dart';
+import '../widgets/user_avatar.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -275,19 +276,10 @@ class _ProfileScreenState extends State<ProfileScreen>
           // ─── AVATAR + STATS ────────────────
           Row(
             children: [
-              CircleAvatar(
+              UserAvatar(
+                username: user.username,
+                photo: user.photo,
                 radius: 40,
-                backgroundColor: AppTheme.green,
-                child: Text(
-                  user.username.isNotEmpty
-                      ? user.username[0].toUpperCase()
-                      : '?',
-                  style: const TextStyle(
-                    fontSize: 32,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
               ),
               const SizedBox(width: 20),
               Expanded(

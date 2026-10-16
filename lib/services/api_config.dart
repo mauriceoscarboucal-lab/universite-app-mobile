@@ -11,6 +11,9 @@ class ApiConfig {
   static const String stories = '$baseUrl/stories/';
   static const String myStories = '$baseUrl/stories/mine/';
   static const String unreadCount = '$baseUrl/chat/unread-count/';
+  static const String sendVerification = '$baseUrl/auth/send-verification/';
+  static const String verifyEmail = '$baseUrl/auth/verify-email/';
+  static const String completeProfile = '$baseUrl/auth/complete-profile/';
 
   // Endpoints utilisateurs
   static String userDetail(int userId) => '$baseUrl/auth/users/$userId/';

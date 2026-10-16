@@ -10,6 +10,7 @@ import '../services/user_service.dart';
 import '../theme/app_theme.dart';
 import 'dart:math' as math;
 import '../services/api_config.dart';
+import 'user_avatar.dart';
 
 class PostCard extends StatefulWidget {
   final Post post;
@@ -479,7 +480,7 @@ with SingleTickerProviderStateMixin  {
             child: Row(
               children: [
                                 // Avatar (cliquable)
-                GestureDetector(
+                                GestureDetector(
                   onTap: () {
                     Navigator.push(
                       context,
@@ -488,18 +489,10 @@ with SingleTickerProviderStateMixin  {
                       ),
                     );
                   },
-                  child: CircleAvatar(
+                  child: UserAvatar(
+                    username: post.authorUsername,
+                    photo: post.authorPhoto,
                     radius: 18,
-                    backgroundColor: const Color(0xFF1E40AF),
-                    child: Text(
-                      post.authorUsername.isNotEmpty
-                          ? post.authorUsername[0].toUpperCase()
-                          : '?',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
                   ),
                 ),
                 const SizedBox(width: 10),

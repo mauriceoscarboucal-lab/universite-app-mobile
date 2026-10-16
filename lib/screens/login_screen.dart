@@ -63,25 +63,27 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo / titre
+                                    // Logo Baobab
                   Container(
-                    width: 100,
-                    height: 100,
+                    width: 110,
+                    height: 110,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.2),
-                          blurRadius: 15,
-                          offset: const Offset(0, 5),
+                          blurRadius: 20,
+                          offset: const Offset(0, 6),
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.eco,
-                      size: 60,
-                      color: AppTheme.green,
+                    padding: const EdgeInsets.all(12),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -94,10 +96,19 @@ class _LoginScreenState extends State<LoginScreen> {
                       letterSpacing: 2,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Le Sénégal participe',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.white,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                   const Text(
                     'Connecte-toi pour continuer',
-                    style: TextStyle(fontSize: 16, color: Colors.white70),
+                    style: TextStyle(fontSize: 14, color: Colors.white70),
                   ),
                   const SizedBox(height: 40),
 

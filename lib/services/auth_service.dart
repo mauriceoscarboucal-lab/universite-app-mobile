@@ -1,13 +1,14 @@
-import '../models/user.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/user.dart';
 import 'api_config.dart';
+import 'dart:typed_data';
 
 /// Service qui gère l'authentification (login, register, token)
 class AuthService {
   /// Connexion : envoie email + password, stocke le token
-    static Future<Map<String, dynamic>> login(String email, String password) async {
+  static Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       final response = await http.post(
         Uri.parse(ApiConfig.login),
@@ -17,13 +18,12 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        // Sauvegarde les tokens
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(ApiConfig.tokenKey, data['access']);
         await prefs.setString(ApiConfig.refreshKey, data['refresh']);
 
         // Décode le JWT pour récupérer l'ID utilisateur
-                try {
+        try {
           final parts = data['access'].split('.');
           if (parts.length == 3) {
             final payload = utf8.decode(
@@ -32,12 +32,10 @@ class AuthService {
             final payloadData = jsonDecode(payload);
             final userId = payloadData['user_id'];
             if (userId != null) {
-              // ⚠️ Conversion en int obligatoire (JWT renvoie une String)
               await prefs.setInt('user_id', int.parse(userId.toString()));
             }
           }
         } catch (e) {
-          // Log pour debug
           print('Erreur décodage JWT: $e');
         }
 
@@ -62,8 +60,11 @@ class AuthService {
     required String email,
     required String password,
     required String password2,
+    String firstName = '',
+    String lastName = '',
     String filiere = '',
     String niveau = '',
+    String dateOfBirth = '',
   }) async {
     try {
       final response = await http.post(
@@ -74,24 +75,26 @@ class AuthService {
           'email': email,
           'password': password,
           'password2': password2,
+          'first_name': firstName,
+          'last_name': lastName,
           'filiere': filiere,
           'niveau': niveau,
+          'date_of_birth': dateOfBirth.isEmpty ? null : dateOfBirth,
         }),
       );
 
       if (response.statusCode == 201) {
-  return {'success': true, 'data': jsonDecode(response.body)};
-} else {
-  // Affiche le vrai message d'erreur de Django
-  final errorBody = jsonDecode(response.body);
-  String errorMsg = 'Erreur inconnue';
-  if (errorBody is Map) {
-    errorMsg = errorBody.entries
-        .map((e) => '${e.key} : ${e.value}')
-        .join('\n');
-  }
-  return {'success': false, 'error': errorMsg};
-}
+        return {'success': true, 'data': jsonDecode(response.body)};
+      } else {
+        final errorBody = jsonDecode(response.body);
+        String errorMsg = 'Erreur inconnue';
+        if (errorBody is Map) {
+          errorMsg = errorBody.entries
+              .map((e) => '${e.key} : ${e.value}')
+              .join('\n');
+        }
+        return {'success': false, 'error': errorMsg};
+      }
     } catch (e) {
       return {'success': false, 'error': 'Erreur réseau : $e'};
     }
@@ -108,6 +111,7 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(ApiConfig.tokenKey);
     await prefs.remove(ApiConfig.refreshKey);
+    await prefs.remove('user_id');
   }
 
   /// Est-ce que l'utilisateur est connecté ?
@@ -116,7 +120,7 @@ class AuthService {
     return token != null && token.isNotEmpty;
   }
 
-    /// Récupère le profil de l'utilisateur connecté
+  /// Récupère le profil de l'utilisateur connecté
   static Future<Map<String, dynamic>> getProfile() async {
     try {
       final token = await getToken();
@@ -128,7 +132,10 @@ class AuthService {
       );
 
       if (response.statusCode == 200) {
-        return {'success': true, 'user': User.fromJson(jsonDecode(response.body))};
+        return {
+          'success': true,
+          'user': User.fromJson(jsonDecode(response.body)),
+        };
       }
       return {'success': false, 'error': 'Erreur ${response.statusCode}'};
     } catch (e) {
@@ -136,7 +143,7 @@ class AuthService {
     }
   }
 
-  /// Met à jour le profil (username, filière, niveau, bio)
+  /// Met à jour le profil
   static Future<Map<String, dynamic>> updateProfile({
     required String username,
     required String filiere,
@@ -162,7 +169,10 @@ class AuthService {
       );
 
       if (response.statusCode == 200) {
-        return {'success': true, 'user': User.fromJson(jsonDecode(response.body))};
+        return {
+          'success': true,
+          'user': User.fromJson(jsonDecode(response.body)),
+        };
       } else {
         final errorBody = jsonDecode(response.body);
         String errorMsg = 'Erreur ${response.statusCode}';
@@ -173,6 +183,90 @@ class AuthService {
         }
         return {'success': false, 'error': errorMsg};
       }
+    } catch (e) {
+      return {'success': false, 'error': 'Erreur réseau : $e'};
+    }
+  }
+
+    /// Envoie un code de vérification par email
+  static Future<Map<String, dynamic>> sendVerificationCode() async {
+    try {
+      final token = await getToken();
+      if (token == null) return {'success': false, 'error': 'Non connecté'};
+
+      final response = await http.post(
+        Uri.parse(ApiConfig.sendVerification),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': jsonDecode(response.body)};
+      }
+      return {'success': false, 'error': 'Erreur ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'error': 'Erreur réseau : $e'};
+    }
+  }
+
+  /// Vérifie le code saisi
+  static Future<Map<String, dynamic>> verifyEmail(String code) async {
+    try {
+      final token = await getToken();
+      if (token == null) return {'success': false, 'error': 'Non connecté'};
+
+      final response = await http.post(
+        Uri.parse(ApiConfig.verifyEmail),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'code': code}),
+      );
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': jsonDecode(response.body)};
+      } else {
+        final error = jsonDecode(response.body);
+        return {'success': false, 'error': error['error'] ?? 'Erreur'};
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Erreur réseau : $e'};
+    }
+  }
+
+  /// Marque le profil comme complété (avec bio + photo optionnelle)
+    static Future<Map<String, dynamic>> completeProfile({
+    String bio = '',
+    Uint8List? photoBytes,
+    String? photoName,
+  }) async {
+    try {
+      final token = await getToken();
+      if (token == null) return {'success': false, 'error': 'Non connecté'};
+
+      final uri = Uri.parse(ApiConfig.completeProfile);
+      final request = http.MultipartRequest('POST', uri);
+      request.headers['Authorization'] = 'Bearer $token';
+      request.fields['bio'] = bio;
+
+      // 📸 Image (via bytes pour compatibilité web + mobile)
+      if (photoBytes != null) {
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'photo',
+            photoBytes,
+            filename: photoName ?? 'photo.jpg',
+          ),
+        );
+      }
+
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+
+      if (response.statusCode == 200) {
+        return {'success': true};
+      }
+      return {'success': false, 'error': 'Erreur ${response.statusCode}'};
     } catch (e) {
       return {'success': false, 'error': 'Erreur réseau : $e'};
     }
