@@ -11,90 +11,49 @@ class CreatePostScreen extends StatefulWidget {
   State<CreatePostScreen> createState() => _CreatePostScreenState();
 }
 
-class _CreatePostScreenState extends State<CreatePostScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _CreatePostScreenState extends State<CreatePostScreen> {
+  final _contentController = TextEditingController();
+  final ImagePicker _picker = ImagePicker();
 
-  // Onglet Texte
-  final _textController = TextEditingController();
-  String _selectedColor = '';
-
-    // Onglet Photo
-  final _captionController = TextEditingController();
-  final ImagePicker _imagePicker = ImagePicker();
-  List<XFile> _pickedImagess = [];
+  List<XFile> _pickedImages = [];
   List<Uint8List> _imageBytesList = [];
-
   bool _isLoading = false;
   String? _error;
 
-  // 🎨 Couleurs de fond disponibles pour les posts texte
-  final List<String> _colors = [
-    '',
-    '#2979FF',
-    '#00C853',
-    '#FFD600',
-    '#FF6D00',
-    '#D50000',
-    '#AA00FF',
-    '#FF4081',
-    '#00B8D4',
-    '#37474F',
-    '#1A1A1A',
-    '#795548',
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() => setState(() => _error = null));
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-    Future<void> _pickImages() async {
+  Future<void> _pickImages() async {
     try {
-      final images = await _imagePicker.pickMultiImage(imageQuality: 80);
-      if (images.isEmpty) return;
-
-      final List<Uint8List> bytesList = [];
-      for (final img in images) {
-        bytesList.add(await img.readAsBytes());
+      final images = await _picker.pickMultiImage(
+        imageQuality: 70, // Qualité réduite pour la vitesse
+        maxWidth: 1080,
+        maxHeight: 1080,
+      );
+      if (images.isNotEmpty) {
+        final List<Uint8List> newBytes = [];
+        for (var img in images) {
+          newBytes.add(await img.readAsBytes());
+        }
+        setState(() {
+          _pickedImages.addAll(images);
+          _imageBytesList.addAll(newBytes);
+        });
       }
-
-      setState(() {
-        _pickedImagess = images;
-        _imageBytesList = bytesList;
-      });
     } catch (e) {
-      setState(() => _error = 'Erreur lors du choix : $e');
+      setState(() => _error = 'Erreur : $e');
     }
   }
 
   void _removeImage(int index) {
     setState(() {
-      _pickedImagess.removeAt(index);
+      _pickedImages.removeAt(index);
       _imageBytesList.removeAt(index);
     });
   }
 
   Future<void> _publish() async {
-    final isTextTab = _tabController.index == 0;
-    final content =
-        isTextTab ? _textController.text.trim() : _captionController.text.trim();
+    final content = _contentController.text.trim();
 
-    // Vérifications
-    if (!isTextTab && _imageBytesList.isEmpty) {
-      setState(() => _error = 'Choisis au moins une photo');
-      return;
-    }
-    if (!isTextTab && _imageBytesList.isEmpty) {
-      setState(() => _error = 'Choisis au moins une photo');
+    if (content.isEmpty && _imageBytesList.isEmpty) {
+      setState(() => _error = 'Écris quelque chose ou choisis une photo');
       return;
     }
 
@@ -105,10 +64,9 @@ class _CreatePostScreenState extends State<CreatePostScreen>
 
     final result = await PostService.createPost(
       content,
-      multipleImages: isTextTab ? null : _imageBytesList,
-      multipleNames:
-          isTextTab ? null : _pickedImagess.map((e) => e.name).toList(),
-      backgroundColor: isTextTab ? _selectedColor : '',
+      multipleImages: _imageBytesList.isEmpty ? null : _imageBytesList,
+      multipleNames: _imageBytesList.isEmpty ? null : _pickedImages.map((e) => e.name).toList(),
+      backgroundColor: '', // On ne gère plus les fonds de couleur
     );
 
     if (!mounted) return;
@@ -123,335 +81,155 @@ class _CreatePostScreenState extends State<CreatePostScreen>
     }
   }
 
-  Color _hexToColor(String hex) {
-    if (hex.isEmpty) return Colors.white;
-    hex = hex.replaceAll('#', '');
-    return Color(int.parse('FF$hex', radix: 16));
-  }
-
-  bool _isDarkColor(String hex) {
-    final color = _hexToColor(hex);
-    return color.computeLuminance() < 0.5;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.darkBg,
       appBar: AppBar(
-        title: const Text('Nouveau post'),
-        backgroundColor: AppTheme.blue,
+        title: const Text('Nouveau post', style: TextStyle(color: Colors.white)),
+        backgroundColor: AppTheme.darkBg,
         foregroundColor: Colors.white,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(gradient: AppTheme.gradient),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
-          tabs: const [
-            Tab(icon: Icon(Icons.text_fields), text: 'Texte'),
-            Tab(icon: Icon(Icons.photo_outlined), text: 'Photo'),
-          ],
-        ),
+        elevation: 0,
       ),
       body: Column(
         children: [
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildTextTab(),
-                _buildPhotoTab(),
-              ],
-            ),
-          ),
-
-          // ─── BOUTON PUBLIER ───────────────────
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              top: false,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (_error != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Text(
-                        _error!,
-                        style: const TextStyle(color: Colors.red),
-                      ),
+                  // ─── ZONE DE TEXTE (SANS FOND DE COULEUR) ───
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.darkCard,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppTheme.borderGreen),
                     ),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      onPressed: _isLoading ? null : _publish,
-                      icon: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Icon(Icons.send),
-                      label: Text(
-                        _isLoading ? 'Publication...' : 'Publier',
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.green,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                    child: TextField(
+                      controller: _contentController,
+                      maxLines: null,
+                      minLines: 6,
+                      maxLength: 2000,
+                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                      decoration: const InputDecoration(
+                        hintText: 'Quoi de neuf ?',
+                        hintStyle: TextStyle(color: AppTheme.textGrey),
+                        border: InputBorder.none,
+                        counterStyle: TextStyle(color: AppTheme.textGrey),
                       ),
                     ),
                   ),
+                  
+                  const SizedBox(height: 16),
+
+                  // ─── GRILLE D'IMAGES ───
+                  if (_imageBytesList.isNotEmpty)
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
+                      ),
+                      itemCount: _imageBytesList.length + 1, // +1 pour le bouton Ajouter
+                      itemBuilder: (context, i) {
+                        if (i == _imageBytesList.length) {
+                          return GestureDetector(
+                            onTap: _pickedImages.length >= 20 ? null : _pickImages,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: AppTheme.darkCard,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: AppTheme.borderGreen),
+                              ),
+                              child: const Icon(Icons.add, color: AppTheme.brightGreen, size: 40),
+                            ),
+                          );
+                        }
+                        return Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.memory(
+                                _imageBytesList[i],
+                                width: double.infinity,
+                                height: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Positioned(
+                              top: 4,
+                              right: 4,
+                              child: GestureDetector(
+                                onTap: () => _removeImage(i),
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                                  child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    )
+                  else
+                    GestureDetector(
+                      onTap: _pickImages,
+                      child: Container(
+                        height: 120,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: AppTheme.darkCard,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppTheme.borderGreen),
+                        ),
+                        child: const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.photo_library_outlined, size: 40, color: AppTheme.brightGreen),
+                            SizedBox(height: 8),
+                            Text('Ajouter jusqu\'à 20 photos', style: TextStyle(color: AppTheme.textGrey)),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  const SizedBox(height: 16),
+                  if (_error != null)
+                    Text(_error!, style: const TextStyle(color: Colors.red)),
                 ],
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
 
-  // ═══════════════════════════════════════════════════════
-  //  ONGLET TEXTE (avec fond coloré)
-  // ═══════════════════════════════════════════════════════
-  Widget _buildTextTab() {
-    final bgColor = _hexToColor(_selectedColor);
-    final textColor = _selectedColor.isEmpty
-        ? Colors.black87
-        : (_isDarkColor(_selectedColor) ? Colors.white : Colors.black87);
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
+          // ─── BOUTON PUBLIER ───
           Container(
-            constraints: const BoxConstraints(minHeight: 220),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(16),
-              border: _selectedColor.isEmpty
-                  ? Border.all(color: Colors.grey.shade300)
-                  : null,
-            ),
             padding: const EdgeInsets.all(16),
-            child: TextField(
-              controller: _textController,
-              maxLines: null,
-              minLines: 8,
-              maxLength: 1000,
-              autofocus: true,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w500,
-                color: textColor,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Quoi de neuf ?',
-                hintStyle: TextStyle(
-                  color: textColor.withOpacity(0.5),
-                  fontSize: 22,
-                  fontWeight: FontWeight.w500,
-                ),
-                border: InputBorder.none,
-                counterStyle: TextStyle(
-                  color: textColor.withOpacity(0.5),
-                ),
-              ),
+            decoration: const BoxDecoration(
+              color: AppTheme.darkBg,
+              border: Border(top: BorderSide(color: AppTheme.borderGreen)),
             ),
-          ),
-          const SizedBox(height: 20),
-
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Choisis une couleur de fond',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          SizedBox(
-            height: 50,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _colors.length,
-              itemBuilder: (context, i) {
-                final color = _colors[i];
-                final isSelected = _selectedColor == color;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: GestureDetector(
-                    onTap: () => setState(() => _selectedColor = color),
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: _hexToColor(color),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isSelected
-                              ? AppTheme.green
-                              : Colors.grey.shade300,
-                          width: isSelected ? 3 : 1,
-                        ),
-                      ),
-                      child: isSelected
-                          ? Icon(
-                              Icons.check,
-                              color: _isDarkColor(color)
-                                  ? Colors.white
-                                  : Colors.black87,
-                            )
-                          : null,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════
-  //  ONGLET PHOTO (avec légende)
-  // ═══════════════════════════════════════════════════════
-    Widget _buildPhotoTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ─── GRILLE D'IMAGES SÉLECTIONNÉES ────
-          if (_imageBytesList.isEmpty)
-            GestureDetector(
-              onTap: _pickImages,
-              child: Container(
-                height: 200,
+            child: SafeArea(
+              top: false,
+              child: SizedBox(
                 width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.photo_library_outlined,
-                        size: 60, color: AppTheme.green),
-                    SizedBox(height: 12),
-                    Text(
-                      'Choisir des photos',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Plusieurs photos possibles',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _publish,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.brightGreen,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('Publier', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
-            )
-          else
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 6,
-                mainAxisSpacing: 6,
-              ),
-              itemCount: _imageBytesList.length + 1,
-              itemBuilder: (context, i) {
-                // Dernier item = bouton "ajouter"
-                if (i == _imageBytesList.length) {
-                  return GestureDetector(
-                    onTap: _pickImages,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: const Icon(Icons.add,
-                          size: 40, color: AppTheme.green),
-                    ),
-                  );
-                }
-
-                return Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.memory(
-                        _imageBytesList[i],
-                        width: double.infinity,
-                        height: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    Positioned(
-                      top: 4,
-                      right: 4,
-                      child: GestureDetector(
-                        onTap: () => _removeImage(i),
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            color: Colors.black54,
-                            shape: BoxShape.circle,
-                          ),
-                          padding: const EdgeInsets.all(4),
-                          child: const Icon(Icons.close,
-                              color: Colors.white, size: 16),
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-
-          const SizedBox(height: 20),
-
-          // ─── LÉGENDE ──────────────────────────
-          const Text(
-            'Légende',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _captionController,
-            maxLines: 4,
-            maxLength: 500,
-            decoration: const InputDecoration(
-              hintText: 'Écris une légende... (optionnel)',
-              border: OutlineInputBorder(),
             ),
           ),
         ],

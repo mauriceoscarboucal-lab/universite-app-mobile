@@ -1,89 +1,83 @@
 import 'package:flutter/material.dart';
 
-/// 🎨 THÈME OFFICIEL DE L'APPLICATION
 class AppTheme {
-  // ─── COULEURS PRINCIPALES ──────────────────
-  static const Color blue = Color(0xFF2979FF);
-  static const Color green = Color(0xFF00C853);
-  static const Color yellow = Color(0xFFFFD600);
+  // ─── COULEURS EXACTES DU CAHIER DES CHARGES ───
+  static const Color darkBg = Color(0xFF001A12);       // Fond principal
+  static const Color darkSecondary = Color(0xFF002319); // Fond secondaire
+  static const Color darkCard = Color(0xFF03251C);     // Fond des cartes
+  static const Color deepGreen = Color(0xFF06452F);    // Vert profond
+  static const Color brightGreen = Color(0xFF00D978);  // Vert lumineux
+  static const Color goldYellow = Color(0xFFFFD43B);   // Jaune doré
+  static const Color textWhite = Color(0xFFFFFFFF);    // Texte principal
+  static const Color textGrey = Color(0xFFB7C6BF);     // Texte secondaire
+  static const Color borderGreen = Color(0xFF14543D);  // Bordures
 
-  // ─── COULEURS SECONDAIRES ──────────────────
-  static const Color blueDark = Color(0xFF1565C0);
-  static const Color blueLight = Color(0xFF4FC3F7);
-  static const Color greenDark = Color(0xFF00A144);
-  static const Color yellowDark = Color(0xFFFFC107);
-  static const Color yellowOrange = Color(0xFFFFAB00);
+  // Alias pour éviter de tout casser dans les anciens fichiers
+  static const Color yellow = goldYellow;
+  static const Color green = brightGreen;
+  static const Color blue = darkBg; // On remplace l'ancien bleu par le fond sombre
 
-  // ─── COULEURS NEUTRES ─────────────────────
-  static const Color white = Color(0xFFFFFFFF);
-  static const Color black = Color(0xFF1A1A1A);
-  static const Color grey = Color(0xFF757575);
-  static const Color greyLight = Color(0xFFE0E0E0);
-  static const Color greyBg = Color(0xFFF5F5F5);
-
-  // ─── DÉGRADÉ PRINCIPAL (Bleu → Vert → Jaune) ───
+  // ─── DÉGRADÉS ───
   static const LinearGradient gradient = LinearGradient(
-    colors: [blue, green, yellow],
-    stops: [0.0, 0.5, 1.0],
+    colors: [deepGreen, darkBg],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
-  // ─── DÉGRADÉ POUR LES CERCLES DE STORIES ───
   static const LinearGradient storyGradient = LinearGradient(
-    colors: [blue, green, yellow],
-    stops: [0.0, 0.5, 1.0],
+    colors: [goldYellow, brightGreen],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
-  // ─── DÉGRADÉ POUR LES BOUTONS ──────────────
   static const LinearGradient buttonGradient = LinearGradient(
-    colors: [blue, green],
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
+    colors: [brightGreen, Color(0xFF00B862)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
   );
 
-  // ─── THÈME GLOBAL ──────────────────────────
+  // ─── THÈME GLOBAL ───
   static ThemeData get themeData {
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: green,
-        primary: green,
-        secondary: yellow,
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: darkBg,
+      colorScheme: const ColorScheme.dark(
+        primary: goldYellow,
+        secondary: brightGreen,
+        surface: darkCard,
       ),
-      scaffoldBackgroundColor: white,
       appBarTheme: const AppBarTheme(
-        backgroundColor: blue,
-        foregroundColor: white,
+        backgroundColor: darkBg,
+        foregroundColor: textWhite,
         elevation: 0,
+      ),
+      textTheme: const TextTheme(
+        bodyMedium: TextStyle(color: textWhite),
+        bodySmall: TextStyle(color: textGrey),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: green,
-          foregroundColor: white,
+          backgroundColor: brightGreen,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
-        backgroundColor: green,
-        foregroundColor: white,
-      ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        selectedItemColor: green,
-        unselectedItemColor: grey,
+        backgroundColor: brightGreen,
+        foregroundColor: Colors.white,
       ),
       inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: darkCard,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(24),
+          borderSide: BorderSide.none,
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: green, width: 2),
-        ),
+        hintStyle: const TextStyle(color: textGrey),
+        labelStyle: const TextStyle(color: textGrey),
       ),
     );
   }

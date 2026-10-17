@@ -6,7 +6,7 @@ import '../services/auth_service.dart';
 import '../services/chat_service.dart';
 import '../services/user_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/baobab_check_icon.dart';
+import '../widgets/user_avatar.dart';
 
 class ChatScreen extends StatefulWidget {
   final Conversation conversation;
@@ -253,26 +253,17 @@ class _ChatScreenState extends State<ChatScreen> {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  // 🌳 Icône de statut du message
+    // ✓ Icône de statut du message
   Widget _buildMessageStatus(Message msg) {
     if (msg.isRead) {
-      return const BaobabCheckIcon(
-        size: 12,
-        color: Color(0xFFFFD600),
-        count: 2,
-      );
+      // Lu → double check jaune
+      return const Icon(Icons.done_all, size: 14, color: AppTheme.goldYellow);
     } else if (msg.isDelivered) {
-      return const BaobabCheckIcon(
-        size: 12,
-        color: Colors.white70,
-        count: 2,
-      );
+      // Livré → double check gris
+      return const Icon(Icons.done_all, size: 14, color: AppTheme.textGrey);
     } else {
-      return const BaobabCheckIcon(
-        size: 12,
-        color: Colors.white70,
-        count: 1,
-      );
+      // Envoyé → simple check gris
+      return const Icon(Icons.done, size: 14, color: AppTheme.textGrey);
     }
   }
 
@@ -352,18 +343,10 @@ class _ChatScreenState extends State<ChatScreen> {
         titleSpacing: 0,
         title: Row(
           children: [
-            CircleAvatar(
+              UserAvatar(
+              username: _conversation.otherUsername,
+              photo: _conversation.otherPhoto,
               radius: 18,
-              backgroundColor: Colors.white24,
-              child: Text(
-                _conversation.otherUsername.isNotEmpty
-                    ? _conversation.otherUsername[0].toUpperCase()
-                    : '?',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -563,13 +546,13 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ),
               ),
-              Text(
-                msg.content,
-                style: TextStyle(
-                  color: isMe ? Colors.white : Colors.black87,
-                  fontSize: 15,
-                ),
+                Text(
+              msg.content,
+              style: TextStyle(
+                color: isMe ? Colors.white : Colors.black87, // <-- Vérifie que c'est bien lisible
+                fontSize: 15,
               ),
+            ),
               const SizedBox(height: 3),
               Row(
                 mainAxisSize: MainAxisSize.min,

@@ -5,6 +5,7 @@ import '../services/story_service.dart';
 import '../screens/create_story_screen.dart';
 import '../screens/story_viewer_screen.dart';
 import '../theme/app_theme.dart';
+import 'user_avatar.dart';
 
 class StoriesBar extends StatefulWidget {
   const StoriesBar({super.key});
@@ -282,20 +283,11 @@ class _StoriesBarState extends State<StoriesBar> {
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(2),
-                    child: CircleAvatar(
-                      backgroundColor:
-                          group.allViewed ? Colors.grey[500] : AppTheme.green,
-                      child: Text(
-                        group.authorUsername.isNotEmpty
-                            ? group.authorUsername[0].toUpperCase()
-                            : '?',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 22,
-                        ),
-                      ),
-                    ),
+                      child: UserAvatar(
+                        username: group.authorUsername,
+                        photo: group.authorPhoto,
+                        radius: 28,
+                      )
                   ),
                 ),
               ),

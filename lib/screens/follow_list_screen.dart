@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../services/user_service.dart';
-import 'user_profile_screen.dart';
 import '../theme/app_theme.dart';
+import '../widgets/user_avatar.dart';
+import 'user_profile_screen.dart';
 
 class FollowListScreen extends StatefulWidget {
   final int userId;
-  final bool showFollowers; // true = abonnés, false = abonnements
-  const FollowListScreen({
-    super.key,
-    required this.userId,
-    required this.showFollowers,
-  });
+  final bool showFollowers;
+  const FollowListScreen({super.key, required this.userId, required this.showFollowers});
 
   @override
   State<FollowListScreen> createState() => _FollowListScreenState();
@@ -47,20 +44,19 @@ class _FollowListScreenState extends State<FollowListScreen> {
     final title = widget.showFollowers ? 'Abonnés' : 'Abonnements';
 
     return Scaffold(
+      backgroundColor: AppTheme.darkBg,
       appBar: AppBar(
-        title: Text(title),
-        backgroundColor: AppTheme.green,
+        title: Text(title, style: const TextStyle(color: Colors.white)),
+        backgroundColor: AppTheme.darkBg,
         foregroundColor: Colors.white,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: AppTheme.brightGreen))
           : _users.isEmpty
               ? Center(
                   child: Text(
-                    widget.showFollowers
-                        ? 'Aucun abonné'
-                        : 'Aucun abonnement',
-                    style: const TextStyle(color: Colors.grey),
+                    widget.showFollowers ? 'Aucun abonné' : 'Aucun abonnement',
+                    style: const TextStyle(color: AppTheme.textGrey),
                   ),
                 )
               : ListView.builder(
@@ -68,29 +64,23 @@ class _FollowListScreenState extends State<FollowListScreen> {
                   itemBuilder: (context, index) {
                     final u = _users[index];
                     return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: AppTheme.green,
-                        child: Text(
-                          u.username.isNotEmpty
-                              ? u.username[0].toUpperCase()
-                              : '?',
-                          style: const TextStyle(color: Colors.white),
-                        ),
+                      leading: UserAvatar(
+                        username: u.username,
+                        photo: u.photo,
+                        radius: 24,
                       ),
                       title: Text(
                         u.username,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                       ),
                       subtitle: Text(
                         '${u.filiere}${u.niveau.isNotEmpty ? " · ${u.niveau}" : ""}',
-                        style: const TextStyle(fontSize: 12),
+                        style: const TextStyle(fontSize: 12, color: AppTheme.textGrey),
                       ),
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => UserProfileScreen(userId: u.id),
-                          ),
+                          MaterialPageRoute(builder: (_) => UserProfileScreen(userId: u.id)),
                         );
                       },
                     );

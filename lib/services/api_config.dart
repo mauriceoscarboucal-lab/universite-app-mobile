@@ -14,6 +14,7 @@ class ApiConfig {
   static const String sendVerification = '$baseUrl/auth/send-verification/';
   static const String verifyEmail = '$baseUrl/auth/verify-email/';
   static const String completeProfile = '$baseUrl/auth/complete-profile/';
+  static const String uploadPhoto = '$baseUrl/auth/upload-photo/';
 
   // Endpoints utilisateurs
   static String userDetail(int userId) => '$baseUrl/auth/users/$userId/';

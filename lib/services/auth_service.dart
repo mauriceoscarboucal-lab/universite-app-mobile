@@ -271,4 +271,38 @@ class AuthService {
       return {'success': false, 'error': 'Erreur réseau : $e'};
     }
   }
+    /// 📸 Upload / Mise à jour de la photo de profil
+  static Future<Map<String, dynamic>> uploadPhoto({
+    required Uint8List photoBytes,
+    required String photoName,
+  }) async {
+    try {
+      final token = await getToken();
+      if (token == null) return {'success': false, 'error': 'Non connecté'};
+
+      final uri = Uri.parse(ApiConfig.uploadPhoto);
+      final request = http.MultipartRequest('POST', uri);
+      request.headers['Authorization'] = 'Bearer $token';
+
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'photo',
+          photoBytes,
+          filename: photoName,
+        ),
+      );
+
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': jsonDecode(response.body)};
+      } else {
+        final error = jsonDecode(response.body);
+        return {'success': false, 'error': error['error'] ?? 'Erreur'};
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Erreur réseau : $e'};
+    }
+  }
 }

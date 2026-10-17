@@ -9,6 +9,9 @@ import 'settings_screen.dart';
 import 'follow_list_screen.dart';
 import '../theme/app_theme.dart';
 import '../widgets/user_avatar.dart';
+import 'dart:typed_data';
+import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -276,10 +279,34 @@ class _ProfileScreenState extends State<ProfileScreen>
           // ─── AVATAR + STATS ────────────────
           Row(
             children: [
-              UserAvatar(
-                username: user.username,
-                photo: user.photo,
-                radius: 40,
+                            Stack(
+                children: [
+                  UserAvatar(
+                    username: user.username,
+                    photo: user.photo,
+                    radius: 40,
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: _isUploadingPhoto ? null : _changePhoto,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: AppTheme.brightGreen,
+                          shape: BoxShape.circle,
+                        ),
+                        child: _isUploadingPhoto
+                            ? const SizedBox(
+                                width: 16, height: 16,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                            : const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(width: 20),
               Expanded(
@@ -450,6 +477,76 @@ class _ProfileScreenState extends State<ProfileScreen>
         ),
       ],
     );
+  }
+    final ImagePicker _imagePicker = ImagePicker();
+  bool _isUploadingPhoto = false;
+
+  // Méthode pour choisir et uploader une photo
+  Future<void> _changePhoto() async {
+    try {
+      final image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 90,
+      );
+      if (image == null) return;
+
+      final cropped = await ImageCropper().cropImage(
+        sourcePath: image.path,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        compressQuality: 80,
+        maxWidth: 800,
+        maxHeight: 800,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Recadrer ma photo',
+            toolbarColor: AppTheme.brightGreen,
+            toolbarWidgetColor: Colors.white,
+            lockAspectRatio: true,
+          ),
+          IOSUiSettings(
+            title: 'Recadrer ma photo',
+            aspectRatioLockEnabled: true,
+          ),
+          WebUiSettings(
+            context: context,
+            presentStyle: WebPresentStyle.dialog,
+            size: const CropperSize(width: 500, height: 500),
+          ),
+        ],
+      );
+
+      if (cropped == null) return;
+
+      final bytes = await cropped.readAsBytes();
+
+      setState(() => _isUploadingPhoto = true);
+
+     final fileName = cropped.path.split('/').last;
+      
+      final result = await AuthService.uploadPhoto(
+        photoBytes: bytes,
+        photoName: fileName.isNotEmpty ? fileName : 'profile_photo.jpg',
+      );
+
+      if (!mounted) return;
+
+      if (result['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Photo mise à jour ! 🎉'), backgroundColor: Colors.green),
+        );
+        _loadProfile(); // Recharge le profil pour afficher la nouvelle photo
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['error'] ?? 'Erreur')),
+        );
+      }
+      setState(() => _isUploadingPhoto = false);
+    } catch (e) {
+      setState(() => _isUploadingPhoto = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur : $e')),
+      );
+    }
   }
 }
 

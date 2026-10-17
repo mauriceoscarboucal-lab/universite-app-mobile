@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../services/user_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/user_avatar.dart';
 import 'user_profile_screen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -55,92 +56,67 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.darkBg,
       appBar: AppBar(
-        backgroundColor: AppTheme.blue,
+        backgroundColor: AppTheme.darkBg,
         foregroundColor: Colors.white,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(gradient: AppTheme.gradient),
-        ),
+        elevation: 0,
         title: Container(
           height: 42,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppTheme.darkCard,
             borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppTheme.borderGreen),
           ),
           child: TextField(
             controller: _searchController,
             onSubmitted: _search,
+            style: const TextStyle(color: Colors.white),
             textInputAction: TextInputAction.search,
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               hintText: 'Rechercher un étudiant...',
-              prefixIcon: const Icon(Icons.search, color: AppTheme.green),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () {
-                        _searchController.clear();
-                        _loadAll();
-                      },
-                    )
-                  : null,
+              hintStyle: TextStyle(color: AppTheme.textGrey),
+              prefixIcon: Icon(Icons.search, color: AppTheme.textGrey),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              contentPadding: EdgeInsets.symmetric(vertical: 10),
             ),
-            onChanged: (value) => setState(() {}),
           ),
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: AppTheme.brightGreen))
           : _error != null
-              ? Center(child: Text('Erreur : $_error'))
+              ? Center(child: Text('Erreur : $_error', style: const TextStyle(color: Colors.white)))
               : _results.isEmpty
                   ? const Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.search_off,
-                              size: 60, color: Colors.grey),
+                          Icon(Icons.search_off, size: 60, color: AppTheme.textGrey),
                           SizedBox(height: 12),
-                          Text(
-                            'Aucun étudiant trouvé',
-                            style: TextStyle(color: Colors.grey),
-                          ),
+                          Text('Aucun étudiant trouvé', style: TextStyle(color: AppTheme.textGrey)),
                         ],
                       ),
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       itemCount: _results.length,
-                      separatorBuilder: (_, __) =>
-                          const Divider(height: 1, indent: 70),
+                      separatorBuilder: (_, __) => const Divider(height: 1, color: AppTheme.borderGreen, indent: 70),
                       itemBuilder: (context, index) {
                         final u = _results[index];
                         return ListTile(
-                          leading: CircleAvatar(
+                          leading: UserAvatar(
+                            username: u.username,
+                            photo: u.photo,
                             radius: 26,
-                            backgroundColor: AppTheme.green,
-                            child: Text(
-                              u.username.isNotEmpty
-                                  ? u.username[0].toUpperCase()
-                                  : '?',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
                           ),
                           title: Text(
                             u.username,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                           ),
                           subtitle: Text(
                             '${u.filiere}${u.niveau.isNotEmpty ? " · ${u.niveau}" : ""}',
-                            style: const TextStyle(fontSize: 12),
+                            style: const TextStyle(fontSize: 12, color: AppTheme.textGrey),
                           ),
                           trailing: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -148,27 +124,18 @@ class _SearchScreenState extends State<SearchScreen> {
                             children: [
                               Text(
                                 '${u.followersCount}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                               ),
                               const Text(
                                 'abonnés',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey,
-                                ),
+                                style: TextStyle(fontSize: 11, color: AppTheme.textGrey),
                               ),
                             ],
                           ),
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    UserProfileScreen(userId: u.id),
-                              ),
+                              MaterialPageRoute(builder: (_) => UserProfileScreen(userId: u.id)),
                             );
                           },
                         );

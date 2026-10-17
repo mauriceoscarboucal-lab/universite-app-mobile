@@ -5,9 +5,9 @@ import '../models/conversation.dart';
 import '../services/auth_service.dart';
 import '../services/chat_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/user_avatar.dart';
 import 'chat_screen.dart';
 import 'new_conversation_screen.dart';
-import '../widgets/baobab_check_icon.dart';
 
 class ConversationsScreen extends StatefulWidget {
   const ConversationsScreen({super.key});
@@ -42,7 +42,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
   void _startAutoRefresh() {
     _refreshTimer?.cancel();
     _refreshTimer = Timer.periodic(
-      const Duration(seconds: 3),       // ⚡ 3 secondes
+      const Duration(seconds: 10),
       (_) => _silentRefresh(),
     );
   }
@@ -97,7 +97,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     }
   }
 
-    void _openChat(Conversation conv) {
+  void _openChat(Conversation conv) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -119,23 +119,32 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
     }
   }
 
+  // 🌳 Icône de statut (✓ ou ✓✓)
+  Widget _buildListCheckIcon(Conversation conv) {
+    if (conv.lastMessageIsRead) {
+      return const Icon(Icons.done_all, size: 16, color: AppTheme.goldYellow);
+    } else if (conv.lastMessageIsDelivered) {
+      return const Icon(Icons.done_all, size: 16, color: AppTheme.textGrey);
+    } else {
+      return const Icon(Icons.done, size: 16, color: AppTheme.textGrey);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.darkBg, // 🌙 FOND SOMBRE POUR L'ÉCRAN
       appBar: AppBar(
-        backgroundColor: AppTheme.blue,
+        backgroundColor: AppTheme.darkBg,
         foregroundColor: Colors.white,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(gradient: AppTheme.gradient),
-        ),
+        elevation: 0,
         title: const Text(
           'Messages',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit_outlined),
+            icon: const Icon(Icons.edit_outlined, color: Colors.white),
             tooltip: 'Nouvelle conversation',
             onPressed: _openNewConversation,
           ),
@@ -149,20 +158,29 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
             child: TextField(
               controller: _searchController,
               onChanged: (_) => setState(_applyFilter),
+              style: const TextStyle(color: Colors.white), // Texte blanc
               decoration: InputDecoration(
                 hintText: 'Rechercher une conversation...',
-                prefixIcon: const Icon(Icons.search, color: AppTheme.green),
+                hintStyle: const TextStyle(color: AppTheme.textGrey),
+                prefixIcon: const Icon(Icons.search, color: AppTheme.textGrey),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.close),
+                        icon: const Icon(Icons.close, color: AppTheme.textGrey),
                         onPressed: () {
                           _searchController.clear();
                           setState(_applyFilter);
                         },
                       )
                     : null,
+                filled: true,
+                fillColor: AppTheme.darkCard, // Fond sombre du champ
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
+                  borderSide: const BorderSide(color: AppTheme.borderGreen),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: const BorderSide(color: AppTheme.borderGreen),
                 ),
                 contentPadding: const EdgeInsets.symmetric(vertical: 8),
               ),
@@ -178,7 +196,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
 
   Widget _buildContent() {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: AppTheme.brightGreen));
     }
 
     if (_error != null) {
@@ -186,7 +204,7 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Erreur : $_error'),
+            Text('Erreur : $_error', style: const TextStyle(color: Colors.white)),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadAll,
@@ -202,25 +220,16 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.chat_bubble_outline,
-                size: 70, color: Colors.grey[400]),
+            Icon(Icons.chat_bubble_outline, size: 70, color: AppTheme.textGrey.withOpacity(0.5)),
             const SizedBox(height: 16),
             Text(
-              _searchController.text.isEmpty
-                  ? 'Aucune conversation'
-                  : 'Aucun résultat',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-              ),
+              _searchController.text.isEmpty ? 'Aucune conversation' : 'Aucun résultat',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textGrey),
             ),
             const SizedBox(height: 8),
             Text(
-              _searchController.text.isEmpty
-                  ? 'Appuie sur ✏️ pour démarrer une discussion'
-                  : 'Essaie un autre mot-clé',
-              style: const TextStyle(color: Colors.grey),
+              _searchController.text.isEmpty ? 'Appuie sur ✏️ pour démarrer une discussion' : 'Essaie un autre mot-clé',
+              style: const TextStyle(color: AppTheme.textGrey),
               textAlign: TextAlign.center,
             ),
           ],
@@ -230,40 +239,17 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
 
     return RefreshIndicator(
       onRefresh: _loadAll,
-      color: AppTheme.green,
+      color: AppTheme.goldYellow,
+      backgroundColor: AppTheme.darkCard,
       child: ListView.separated(
         itemCount: _filtered.length,
-        separatorBuilder: (_, __) =>
-            const Divider(height: 1, indent: 80),
+        separatorBuilder: (_, __) => const Divider(height: 1, color: AppTheme.borderGreen, indent: 80),
         itemBuilder: (context, index) {
           final conv = _filtered[index];
           return _buildConversationTile(conv);
         },
       ),
     );
-  }
-
-      /// 🌳 Baobabs de statut du dernier message
-  Widget _buildListCheckIcon(Conversation conv) {
-    if (conv.lastMessageIsRead) {
-      return const BaobabCheckIcon(
-        size: 14,
-        color: Color(0xFFFFD600),
-        count: 2,
-      );
-    } else if (conv.lastMessageIsDelivered) {
-      return const BaobabCheckIcon(
-        size: 14,
-        color: Colors.grey,
-        count: 2,
-      );
-    } else {
-      return const BaobabCheckIcon(
-        size: 14,
-        color: Colors.grey,
-        count: 1,
-      );
-    }
   }
 
   Widget _buildConversationTile(Conversation conv) {
@@ -276,19 +262,10 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       leading: Stack(
         children: [
-          CircleAvatar(
+          UserAvatar(
+            username: conv.otherUsername,
+            photo: conv.otherPhoto,
             radius: 28,
-            backgroundColor: AppTheme.green,
-            child: Text(
-              conv.otherUsername.isNotEmpty
-                  ? conv.otherUsername[0].toUpperCase()
-                  : '?',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 22,
-              ),
-            ),
           ),
           if (conv.unreadCount > 0)
             Positioned(
@@ -297,31 +274,26 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
               child: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: const BoxDecoration(
-                  gradient: AppTheme.gradient,
+                  color: AppTheme.brightGreen,
                   shape: BoxShape.circle,
                 ),
                 child: Text(
                   '${conv.unreadCount}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
         ],
       ),
-      title: Text(
-        conv.otherUsername,
+        title: Text(
+        conv.otherUsername.isNotEmpty ? conv.otherUsername : 'Utilisateur',
         style: TextStyle(
-          fontWeight: conv.unreadCount > 0
-              ? FontWeight.bold
-              : FontWeight.w600,
+          color: Colors.white, // <-- Ici on mettait du blanc
+          fontWeight: conv.unreadCount > 0 ? FontWeight.bold : FontWeight.w600,
           fontSize: 15,
         ),
       ),
-        subtitle: Padding(
+      subtitle: Padding(
         padding: const EdgeInsets.only(top: 4),
         child: Row(
           children: [
@@ -336,12 +308,8 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: conv.unreadCount > 0
-                      ? Colors.black87
-                      : Colors.grey[600],
-                  fontWeight: conv.unreadCount > 0
-                      ? FontWeight.w500
-                      : FontWeight.normal,
+                  color: conv.unreadCount > 0 ? Colors.white : AppTheme.textGrey,
+                  fontWeight: conv.unreadCount > 0 ? FontWeight.w500 : FontWeight.normal,
                   fontSize: 13,
                 ),
               ),
@@ -353,9 +321,8 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
         timeAgo,
         style: TextStyle(
           fontSize: 11,
-          color: conv.unreadCount > 0 ? AppTheme.green : Colors.grey,
-          fontWeight:
-              conv.unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
+          color: conv.unreadCount > 0 ? AppTheme.brightGreen : AppTheme.textGrey,
+          fontWeight: conv.unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
         ),
       ),
       onTap: () => _openChat(conv),

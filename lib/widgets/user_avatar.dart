@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import '../services/api_config.dart';
 import '../theme/app_theme.dart';
 
-/// 🌳 Avatar réutilisable partout : affiche la photo si dispo, sinon l'initiale
 class UserAvatar extends StatelessWidget {
   final String username;
-  final String? photo; // URL relative ou complète
+  final String? photo;
   final double radius;
   final Color? backgroundColor;
 
@@ -19,34 +18,52 @@ class UserAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = backgroundColor ?? AppTheme.green;
+    final bg = backgroundColor ?? AppTheme.brightGreen;
+    final initial = username.isNotEmpty ? username[0].toUpperCase() : '?';
 
     // Si pas de photo → initiale
     if (photo == null || photo!.isEmpty) {
-      return CircleAvatar(
-        radius: radius,
-        backgroundColor: bg,
-        child: Text(
-          username.isNotEmpty ? username[0].toUpperCase() : '?',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: radius * 0.8,
-          ),
-        ),
-      );
+      return _buildInitialAvatar(bg, initial);
     }
 
-    // Sinon → photo
-    final url = photo!.startsWith('http')
-        ? photo!
-        : ApiConfig.fullUrl(photo!);
+    // Sinon → photo avec fallback si erreur
+    final url = photo!.startsWith('http') ? photo! : ApiConfig.fullUrl(photo!);
 
     return CircleAvatar(
       radius: radius,
       backgroundColor: bg,
-      backgroundImage: NetworkImage(url),
-      onBackgroundImageError: (_, __) {},
+      child: ClipOval(
+        child: Image.network(
+          url,
+          width: radius * 2,
+          height: radius * 2,
+          fit: BoxFit.cover,
+          // Si l'image ne charge pas → affiche l'initiale
+          errorBuilder: (context, error, stackTrace) {
+            return _buildInitialAvatar(bg, initial);
+          },
+          // Pendant le chargement → affiche l'initiale
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return _buildInitialAvatar(bg, initial);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInitialAvatar(Color bg, String initial) {
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: bg,
+      child: Text(
+        initial,
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: radius * 0.8,
+        ),
+      ),
     );
   }
 }

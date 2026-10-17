@@ -4,6 +4,7 @@ import 'home_screen.dart';
 import 'search_screen.dart';
 import 'conversations_screen.dart';
 import 'profile_screen.dart';
+import 'create_post_screen.dart';
 import '../services/chat_service.dart';
 import '../theme/app_theme.dart';
 
@@ -52,126 +53,128 @@ class _MainScreenState extends State<MainScreen> {
     if (mounted) setState(() => _unreadCount = count);
   }
 
+  void _openCreatePost() async {
+    final created = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CreatePostScreen()),
+    );
+    if (created == true && mounted) {
+      setState(() => _currentIndex = 0);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true,
+      backgroundColor: AppTheme.darkBg,
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          height: 65,
-          decoration: BoxDecoration(
-            gradient: AppTheme.gradient,
-            borderRadius: BorderRadius.circular(32),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+      // ─── BOUTON CENTRAL FLOTTANT ───
+      floatingActionButton: Container(
+        margin: const EdgeInsets.only(top: 10), // Pour le surélever un peu
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.brightGreen.withOpacity(0.4),
+              blurRadius: 15,
+              spreadRadius: 2,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          onPressed: _openCreatePost,
+          backgroundColor: AppTheme.brightGreen,
+          elevation: 0,
+          child: const Icon(Icons.add, color: Colors.white, size: 32),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      // ─── BARRE DE NAVIGATION ───
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          color: AppTheme.darkBg,
+          border: Border(
+            top: BorderSide(color: AppTheme.borderGreen, width: 1),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildNavItem(0, Icons.home_outlined, Icons.home, 'Accueil'),
-              _buildNavItem(1, Icons.search_outlined, Icons.search, 'Recherche'),
-              _buildNavItem(
-                2,
-                Icons.chat_bubble_outline,
-                Icons.chat_bubble,
-                'Messages',
-                badge: _unreadCount,
-              ),
-              _buildNavItem(3, Icons.person_outline, Icons.person, 'Profil'),
-            ],
+        ),
+        child: BottomAppBar(
+          color: Colors.transparent,
+          elevation: 0,
+          shape: const CircularNotchedRectangle(),
+          notchMargin: 8.0,
+          child: SizedBox(
+            height: 60,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(0, Icons.home_outlined, Icons.home, 'Accueil'),
+                _buildNavItem(1, Icons.explore_outlined, Icons.explore, 'Découvrir'),
+                const SizedBox(width: 40), // Espace pour le bouton central
+                _buildNavItem(2, Icons.chat_bubble_outline, Icons.chat_bubble, 'Messages', badge: _unreadCount),
+                _buildNavItem(3, Icons.person_outline, Icons.person, 'Profil'),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(
-    int index,
-    IconData outlineIcon,
-    IconData filledIcon,
-    String label, {
-    int badge = 0,
-  }) {
+  Widget _buildNavItem(int index, IconData outline, IconData filled, String label, {int badge = 0}) {
     final isSelected = _currentIndex == index;
 
     return GestureDetector(
       onTap: () {
         setState(() => _currentIndex = index);
-        // Quand on va sur Messages, on rafraîchit le compteur
         if (index == 2) _loadUnreadCount();
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeInOut,
-        padding: EdgeInsets.symmetric(
-          horizontal: isSelected ? 16 : 12,
-          vertical: 8,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Row(
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(
-                  isSelected ? filledIcon : outlineIcon,
-                  color: isSelected ? AppTheme.green : Colors.white,
-                  size: 24,
-                ),
-                if (badge > 0)
-                  Positioned(
-                    right: -6,
-                    top: -4,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.white, width: 1.5),
-                      ),
-                      constraints: const BoxConstraints(minWidth: 18),
-                      child: Text(
-                        badge > 99 ? '99+' : '$badge',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Icon(
+                isSelected ? filled : outline,
+                color: isSelected ? AppTheme.goldYellow : AppTheme.textGrey,
+                size: 26,
+              ),
+              if (badge > 0)
+                Positioned(
+                  right: -6,
+                  top: -4,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppTheme.darkBg, width: 1.5),
+                    ),
+                    constraints: const BoxConstraints(minWidth: 18),
+                    child: Text(
+                      badge > 99 ? '99+' : '$badge',
+                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
                     ),
                   ),
-              ],
-            ),
-            if (isSelected) ...[
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: AppTheme.green,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
                 ),
-              ),
             ],
-          ],
-        ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? AppTheme.goldYellow : AppTheme.textGrey,
+              fontSize: 11,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ],
       ),
     );
   }
