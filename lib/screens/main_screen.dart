@@ -7,6 +7,7 @@ import 'profile_screen.dart';
 import 'create_post_screen.dart';
 import '../services/chat_service.dart';
 import '../theme/app_theme.dart';
+import 'discover_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -22,7 +23,7 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
-    SearchScreen(),
+    DiscoverScreen(),      // <-- Le placeholder pour Découvrir
     ConversationsScreen(),
     ProfileScreen(),
   ];
@@ -102,7 +103,8 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ),
         child: BottomAppBar(
-          color: Colors.transparent,
+          color: AppTheme.darkBg, // 🌙 Force le fond sombre
+          surfaceTintColor: Colors.transparent, // Enlève l'effet de teinte
           elevation: 0,
           shape: const CircularNotchedRectangle(),
           notchMargin: 8.0,

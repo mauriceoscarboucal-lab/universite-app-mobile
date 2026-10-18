@@ -3,6 +3,7 @@ import '../models/user.dart';
 import '../services/chat_service.dart';
 import '../services/user_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/user_avatar.dart';
 
 class NewConversationScreen extends StatefulWidget {
   const NewConversationScreen({super.key});
@@ -59,29 +60,36 @@ class _NewConversationScreenState extends State<NewConversationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.darkBg, // 🌙 Fond sombre
       appBar: AppBar(
-        backgroundColor: AppTheme.blue,
+        backgroundColor: AppTheme.darkBg,
         foregroundColor: Colors.white,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(gradient: AppTheme.gradient),
-        ),
-        title: const Text('Nouveau message'),
+        elevation: 0,
+        title: const Text('Nouveau message', style: TextStyle(color: Colors.white)),
       ),
       body: Column(
         children: [
-          // ─── BARRE DE RECHERCHE ────────────
+          // ─── BARRE DE RECHERCHE SOMBRE ────────────
           Padding(
             padding: const EdgeInsets.all(12),
             child: TextField(
               controller: _searchController,
               onChanged: _search,
               autofocus: true,
+              style: const TextStyle(color: Colors.white), // Texte blanc
               decoration: InputDecoration(
                 hintText: 'Rechercher un étudiant...',
-                prefixIcon: const Icon(Icons.search, color: AppTheme.green),
+                hintStyle: const TextStyle(color: AppTheme.textGrey),
+                prefixIcon: const Icon(Icons.search, color: AppTheme.textGrey),
+                filled: true,
+                fillColor: AppTheme.darkCard, // Fond de la barre
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
+                  borderSide: const BorderSide(color: AppTheme.borderGreen),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: const BorderSide(color: AppTheme.borderGreen),
                 ),
                 contentPadding: const EdgeInsets.symmetric(vertical: 8),
               ),
@@ -91,48 +99,34 @@ class _NewConversationScreenState extends State<NewConversationScreen> {
           // ─── RÉSULTATS ─────────────────────
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(child: CircularProgressIndicator(color: AppTheme.brightGreen))
                 : _error != null
-                    ? Center(child: Text('Erreur : $_error'))
+                    ? Center(child: Text('Erreur : $_error', style: const TextStyle(color: Colors.white)))
                     : _results.isEmpty
                         ? const Center(
-                            child: Text(
-                              'Aucun étudiant trouvé',
-                              style: TextStyle(color: Colors.grey),
-                            ),
+                            child: Text('Aucun étudiant trouvé', style: TextStyle(color: AppTheme.textGrey)),
                           )
                         : ListView.separated(
                             itemCount: _results.length,
-                            separatorBuilder: (_, __) =>
-                                const Divider(height: 1, indent: 70),
+                            separatorBuilder: (_, __) => const Divider(height: 1, color: AppTheme.borderGreen, indent: 70),
                             itemBuilder: (context, index) {
                               final user = _results[index];
                               return ListTile(
-                                leading: CircleAvatar(
+                                tileColor: Colors.transparent, // Enlève le fond blanc par défaut
+                                leading: UserAvatar(
+                                  username: user.username,
+                                  photo: user.photo,
                                   radius: 24,
-                                  backgroundColor: AppTheme.green,
-                                  child: Text(
-                                    user.username.isNotEmpty
-                                        ? user.username[0].toUpperCase()
-                                        : '?',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
                                 ),
                                 title: Text(
                                   user.username,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                 ),
                                 subtitle: Text(
                                   '${user.filiere}${user.niveau.isNotEmpty ? " · ${user.niveau}" : ""}',
-                                  style: const TextStyle(fontSize: 12),
+                                  style: const TextStyle(fontSize: 12, color: AppTheme.textGrey),
                                 ),
-                                trailing: const Icon(Icons.chat_bubble_outline,
-                                    color: AppTheme.green),
+                                trailing: const Icon(Icons.chat_bubble_outline, color: AppTheme.brightGreen),
                                 onTap: () => _startConversation(user),
                               );
                             },

@@ -106,9 +106,9 @@ class _StoriesBarState extends State<StoriesBar> {
   Widget build(BuildContext context) {
     return Container(
       height: 110,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
+      decoration: const BoxDecoration(
+        color: AppTheme.darkBg, // 🌙 Fond sombre
+        border: Border(bottom: BorderSide(color: AppTheme.borderGreen)), // Bordure verte
       ),
       child: _isLoading
           ? const Center(
@@ -159,7 +159,7 @@ class _StoriesBarState extends State<StoriesBar> {
               width: 70,
               child: Text(
                 'Ma story',
-                style: TextStyle(fontSize: 12),
+                style: TextStyle(fontSize: 12, color: Colors.white), // <-- AJOUTE CA
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -244,10 +244,10 @@ class _StoriesBarState extends State<StoriesBar> {
           ),
           const SizedBox(height: 4),
           const SizedBox(
-            width: 70,
-            child: Text(
-              'Ma story',
-              style: TextStyle(fontSize: 12),
+              width: 70,
+              child: Text(
+                'Ma story',
+                style: TextStyle(fontSize: 12, color: Colors.white), // <-- AJOUTE CA
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
             ),

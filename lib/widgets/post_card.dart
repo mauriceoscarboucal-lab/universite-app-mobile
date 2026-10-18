@@ -64,6 +64,22 @@ class _PostCardState extends State<PostCard> with SingleTickerProviderStateMixin
   }
 
   @override
+  void didUpdateWidget(covariant PostCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Si les données du serveur ont changé, on met à jour l'affichage local
+    if (oldWidget.post.likesCount != widget.post.likesCount || 
+        oldWidget.post.isLiked != widget.post.isLiked ||
+        oldWidget.post.isFollowingAuthor != widget.post.isFollowingAuthor) { // <-- AJOUTE CETTE LIGNE
+      
+      setState(() {
+        _likesCount = widget.post.likesCount;
+        _isLiked = widget.post.isLiked;
+        _isFollowingAuthor = widget.post.isFollowingAuthor; // <-- AJOUTE CETTE LIGNE
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _heartController.dispose();
     _pageController.dispose();
@@ -99,7 +115,9 @@ class _PostCardState extends State<PostCard> with SingleTickerProviderStateMixin
         _likesCount = result['data']['likes_count'];
         _isLiked = result['data']['status'] == 'liked';
       });
+      widget.onRefresh(); // <-- FORCE LE FEED PARENT A SE METTRE A JOUR
     } else {
+      // En cas d'erreur, on annule
       setState(() {
         _isLiked = !_isLiked;
         _likesCount += _isLiked ? 1 : -1;
@@ -107,17 +125,21 @@ class _PostCardState extends State<PostCard> with SingleTickerProviderStateMixin
     }
   }
 
-  Future<void> _toggleFollow() async {
+    Future<void> _toggleFollow() async {
     if (_isFollowLoading) return;
     setState(() => _isFollowLoading = true);
     setState(() => _isFollowingAuthor = !_isFollowingAuthor);
+    
     final result = await UserService.toggleFollow(widget.post.author);
     if (!mounted) return;
+    
     if (result['success'] == true) {
       setState(() {
         _isFollowingAuthor = result['data']['status'] == 'followed';
         _isFollowLoading = false;
       });
+      // 🔄 Force le rafraîchissement de TOUT le feed instantanément
+      widget.onRefresh(); 
     } else {
       setState(() {
         _isFollowingAuthor = !_isFollowingAuthor;
@@ -203,7 +225,7 @@ class _PostCardState extends State<PostCard> with SingleTickerProviderStateMixin
                   ),
                 IconButton(
                   icon: const Icon(Icons.more_horiz, color: AppTheme.textGrey),
-                  onPressed: () {},
+                  onPressed: _showOptionsMenu, // <-- Doit appeler la méthode
                 ),
               ],
             ),
@@ -334,6 +356,58 @@ class _PostCardState extends State<PostCard> with SingleTickerProviderStateMixin
           ),
           const SizedBox(height: 8),
         ],
+      ),
+    );
+  }
+    void _showOptionsMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.darkCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.textGrey,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            if (widget.post.isMyPost) ...[
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: const Text('Supprimer', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(context);
+                  // Appelle la logique de suppression
+                },
+              ),
+            ] else ...[
+              ListTile(
+                leading: const Icon(Icons.flag_outlined, color: Colors.red),
+                title: const Text('Signaler', style: TextStyle(color: Colors.red)),
+                onTap: () => Navigator.pop(context),
+              ),
+              ListTile(
+                leading: const Icon(Icons.info_outline, color: Colors.white),
+                title: Text('À propos de @${widget.post.authorUsername}', style: const TextStyle(color: Colors.white)),
+                onTap: () => Navigator.pop(context),
+              ),
+            ],
+            ListTile(
+              leading: const Icon(Icons.copy_outlined, color: Colors.white),
+              title: const Text('Copier le lien', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(context),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }

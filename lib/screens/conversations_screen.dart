@@ -241,9 +241,9 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
       onRefresh: _loadAll,
       color: AppTheme.goldYellow,
       backgroundColor: AppTheme.darkCard,
-      child: ListView.separated(
+        child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         itemCount: _filtered.length,
-        separatorBuilder: (_, __) => const Divider(height: 1, color: AppTheme.borderGreen, indent: 80),
         itemBuilder: (context, index) {
           final conv = _filtered[index];
           return _buildConversationTile(conv);
@@ -258,74 +258,83 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
         ? timeago.format(conv.lastMessageAt!, locale: 'fr')
         : timeago.format(conv.updatedAt, locale: 'fr');
 
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      leading: Stack(
-        children: [
-          UserAvatar(
-            username: conv.otherUsername,
-            photo: conv.otherPhoto,
-            radius: 28,
-          ),
-          if (conv.unreadCount > 0)
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: const BoxDecoration(
-                  color: AppTheme.brightGreen,
-                  shape: BoxShape.circle,
-                ),
-                child: Text(
-                  '${conv.unreadCount}',
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-        ],
+        return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.darkCard,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.borderGreen, width: 1),
       ),
-        title: Text(
-        conv.otherUsername.isNotEmpty ? conv.otherUsername : 'Utilisateur',
-        style: TextStyle(
-          color: Colors.white, // <-- Ici on mettait du blanc
-          fontWeight: conv.unreadCount > 0 ? FontWeight.bold : FontWeight.w600,
-          fontSize: 15,
-        ),
-      ),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 4),
-        child: Row(
+      child: ListTile(
+        tileColor: Colors.transparent, // <-- AJOUTE CA
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: Stack(
           children: [
-            if (isLastFromMe)
-              Padding(
-                padding: const EdgeInsets.only(right: 4),
-                child: _buildListCheckIcon(conv),
-              ),
-            Expanded(
-              child: Text(
-                conv.lastMessage ?? 'Nouvelle conversation',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: conv.unreadCount > 0 ? Colors.white : AppTheme.textGrey,
-                  fontWeight: conv.unreadCount > 0 ? FontWeight.w500 : FontWeight.normal,
-                  fontSize: 13,
+            UserAvatar(
+              username: conv.otherUsername,
+              photo: conv.otherPhoto,
+              radius: 26,
+            ),
+            if (conv.unreadCount > 0)
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: const BoxDecoration(
+                    color: AppTheme.brightGreen,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    '${conv.unreadCount}',
+                    style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
-            ),
           ],
         ),
-      ),
-      trailing: Text(
-        timeAgo,
-        style: TextStyle(
-          fontSize: 11,
-          color: conv.unreadCount > 0 ? AppTheme.brightGreen : AppTheme.textGrey,
-          fontWeight: conv.unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
+        title: Text(
+          conv.otherUsername.isNotEmpty ? conv.otherUsername : 'Utilisateur',
+          style: TextStyle(
+            color: AppTheme.goldYellow, // 🟡 Nom en jaune pour ressortir
+            fontWeight: conv.unreadCount > 0 ? FontWeight.bold : FontWeight.w600,
+            fontSize: 16,
+          ),
         ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Row(
+            children: [
+              if (isLastFromMe)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: _buildListCheckIcon(conv),
+                ),
+              Expanded(
+                child: Text(
+                  conv.lastMessage ?? 'Nouvelle conversation',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: conv.unreadCount > 0 ? Colors.white : AppTheme.textGrey,
+                    fontWeight: conv.unreadCount > 0 ? FontWeight.w500 : FontWeight.normal,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        trailing: Text(
+          timeAgo,
+          style: TextStyle(
+            fontSize: 11,
+            color: conv.unreadCount > 0 ? AppTheme.brightGreen : AppTheme.textGrey,
+            fontWeight: conv.unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        onTap: () => _openChat(conv),
       ),
-      onTap: () => _openChat(conv),
     );
   }
 }

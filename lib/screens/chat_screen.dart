@@ -839,14 +839,16 @@ class _ChatScreenState extends State<ChatScreen> {
                   maxLines: null,
                   textInputAction: TextInputAction.send,
                   onSubmitted: (_) => _sendMessage(),
+                  style: const TextStyle(color: Colors.white), // <-- S'assurer que c'est là
                   decoration: InputDecoration(
                     hintText: 'Message...',
+                    hintStyle: const TextStyle(color: AppTheme.textGrey), // <-- S'assurer que c'est là
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
-                    fillColor: Colors.grey[100],
+                    fillColor: AppTheme.darkCard, // <-- Fond sombre
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 10),
                   ),

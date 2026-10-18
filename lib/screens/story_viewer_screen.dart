@@ -5,6 +5,7 @@ import '../models/story.dart';
 import '../services/api_config.dart';
 import '../services/story_service.dart';
 import '../services/auth_service.dart';
+import '../widgets/user_avatar.dart';
 
 class StoryViewerScreen extends StatefulWidget {
   final List<StoryGroup> groups;
@@ -294,18 +295,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
               right: 12,
               child: Row(
                 children: [
-                  CircleAvatar(
+                  UserAvatar(
+                    username: _currentGroup.authorUsername,
+                    photo: _currentGroup.authorPhoto,
                     radius: 18,
-                    backgroundColor: const Color(0xFF1E40AF),
-                    child: Text(
-                      _currentGroup.authorUsername.isNotEmpty
-                          ? _currentGroup.authorUsername[0].toUpperCase()
-                          : '?',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
