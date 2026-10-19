@@ -3,6 +3,10 @@ import 'package:timeago/timeago.dart' as timeago;
 import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/user_avatar.dart';
+import '../services/post_service.dart';
+import '../models/post.dart';
+import 'comments_screen.dart';
+import 'post_detail_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -56,7 +60,35 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     if (n['notification_type'] == 'comment') text = 'a commenté ta publication.';
 
                     return ListTile(
-                      tileColor: Colors.transparent, // <-- AJOUTE CA
+                      tileColor: Colors.transparent,
+                      onTap: () async {
+                        if (n['post'] != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Ouverture de la publication...'),
+                              duration: Duration(milliseconds: 500),
+                            ),
+                          );
+                          final result = await PostService.getPostById(n['post']);
+                          
+                          if (result['success'] == true) {
+                            final post = result['data'] as Post;
+                            if (!context.mounted) return;
+                            
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PostDetailScreen(post: post),
+                              ),
+                            );
+                          } else {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Publication introuvable (supprimée ?)')),
+                            );
+                          }
+                        }
+                      },
                       leading: UserAvatar(username: n['sender_username'], photo: n['sender_photo'], radius: 22),
                       title: RichText(
                         text: TextSpan(

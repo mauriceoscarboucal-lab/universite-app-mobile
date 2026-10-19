@@ -223,9 +223,15 @@ class _PostCardState extends State<PostCard> with SingleTickerProviderStateMixin
                         ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                         : const Text('Suivre', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                   ),
-                IconButton(
-                  icon: const Icon(Icons.more_horiz, color: AppTheme.textGrey),
-                  onPressed: _showOptionsMenu, // <-- Doit appeler la méthode
+                GestureDetector(
+                  onTapUp: (details) {
+                    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+                    _showOptionsMenu(context, details.globalPosition, overlay);
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Icon(Icons.more_horiz, color: AppTheme.textGrey),
+                  ),
                 ),
               ],
             ),
@@ -330,7 +336,23 @@ class _PostCardState extends State<PostCard> with SingleTickerProviderStateMixin
                 const SizedBox(width: 20),
                 GestureDetector(
                   onTap: () async {
-                    await Navigator.push(context, MaterialPageRoute(builder: (_) => CommentsScreen(post: post)));
+                    await Navigator.push(
+                      context,
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) => CommentsScreen(post: post),
+                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                          const begin = Offset(0.0, 1.0); // Commence en bas
+                          const end = Offset.zero; // Finit à sa place
+                          const curve = Curves.easeOutCubic; // Courbe fluide
+                          
+                          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                          return SlideTransition(
+                            position: animation.drive(tween),
+                            child: child,
+                          );
+                        },
+                      ),
+                    );
                     widget.onRefresh();
                   },
                   child: Row(
@@ -359,56 +381,117 @@ class _PostCardState extends State<PostCard> with SingleTickerProviderStateMixin
       ),
     );
   }
-    void _showOptionsMenu() {
-    showModalBottomSheet(
+  void _showOptionsMenu(BuildContext context, Offset position, RenderBox overlay) async {
+    final result = await showMenu(
       context: context,
-      backgroundColor: AppTheme.darkCard,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      position: RelativeRect.fromRect(
+        Rect.fromPoints(position, position),
+        Offset.zero & overlay.size,
       ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 10),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppTheme.textGrey,
-                borderRadius: BorderRadius.circular(2),
-              ),
+      color: AppTheme.darkCard, // Fond sombre
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppTheme.borderGreen), // Bordure verte
+      ),
+      items: [
+        if (widget.post.isMyPost)
+          const PopupMenuItem(
+            value: 'delete',
+            child: Row(
+              children: [
+                Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                SizedBox(width: 8),
+                Text('Supprimer', style: TextStyle(color: Colors.red)),
+              ],
             ),
-            if (widget.post.isMyPost) ...[
-              ListTile(
-                leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: const Text('Supprimer', style: TextStyle(color: Colors.red)),
-                onTap: () {
-                  Navigator.pop(context);
-                  // Appelle la logique de suppression
-                },
-              ),
-            ] else ...[
-              ListTile(
-                leading: const Icon(Icons.flag_outlined, color: Colors.red),
-                title: const Text('Signaler', style: TextStyle(color: Colors.red)),
-                onTap: () => Navigator.pop(context),
-              ),
-              ListTile(
-                leading: const Icon(Icons.info_outline, color: Colors.white),
-                title: Text('À propos de @${widget.post.authorUsername}', style: const TextStyle(color: Colors.white)),
-                onTap: () => Navigator.pop(context),
-              ),
+          )
+        else ...[
+          const PopupMenuItem(
+            value: 'report',
+            child: Row(
+              children: [
+                Icon(Icons.flag_outlined, color: Colors.red, size: 20),
+                SizedBox(width: 8),
+                Text('Signaler', style: TextStyle(color: Colors.red)),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'info',
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Text('À propos de @${widget.post.authorUsername}', style: const TextStyle(color: Colors.white)),
+              ],
+            ),
+          ),
+        ],
+        const PopupMenuItem(
+          value: 'copy',
+          child: Row(
+            children: [
+              Icon(Icons.copy_outlined, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Text('Copier le lien', style: TextStyle(color: Colors.white)),
             ],
-            ListTile(
-              leading: const Icon(Icons.copy_outlined, color: Colors.white),
-              title: const Text('Copier le lien', style: TextStyle(color: Colors.white)),
-              onTap: () => Navigator.pop(context),
-            ),
-            const SizedBox(height: 8),
-          ],
+          ),
         ),
+      ],
+    );
+
+    // Gestion des actions du menu
+    if (result == 'delete') {
+      // Appeler ta fonction de suppression de post ici
+      _confirmDelete();
+    } else if (result == 'report') {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Signalement envoyé')));
+    } else if (result == 'info') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => UserProfileScreen(userId: widget.post.author)));
+    } else if (result == 'copy') {
+      // Copier le lien
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lien copié 📋')));
+    }
+  }
+    Future<void> _confirmDelete() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppTheme.darkCard,
+        title: const Text('Supprimer ce post ?', style: TextStyle(color: Colors.white)),
+        content: const Text('Cette action est irréversible.', style: TextStyle(color: AppTheme.textGrey)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler', style: TextStyle(color: AppTheme.textGrey)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Supprimer', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
+
+    if (confirm != true) return;
+
+    // On appelle l'API pour supprimer
+    final result = await PostService.deletePost(widget.post.id);
+
+    if (!mounted) return;
+
+    if (result['success'] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Publication supprimée ✅'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      widget.onRefresh(); // Rafraîchit le feed pour retirer la carte
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['error'] ?? 'Erreur lors de la suppression')),
+      );
+    }
   }
 }

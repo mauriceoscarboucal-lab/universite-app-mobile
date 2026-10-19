@@ -173,7 +173,7 @@ class PostService {
     }
   }
     /// Récupère un post unique par son ID
-  static Future<Map<String, dynamic>> getPostById(int postId) async {
+    static Future<Map<String, dynamic>> getPostById(int postId) async {
     try {
       final token = await AuthService.getToken();
       if (token == null) return {'success': false, 'error': 'Non connecté'};
@@ -184,7 +184,7 @@ class PostService {
       );
 
       if (response.statusCode == 200) {
-        return {'success': true, 'data': jsonDecode(response.body)};
+        return {'success': true, 'data': Post.fromJson(jsonDecode(response.body))};
       }
       return {'success': false, 'error': 'Erreur ${response.statusCode}'};
     } catch (e) {
