@@ -63,6 +63,7 @@ class PostService {
     List<Uint8List>? multipleImages,      // <-- AJOUTE
     List<String>? multipleNames,           // <-- AJOUTE
     String backgroundColor = '',
+    String audience = 'public', // <-- NOUVEAU
   }) async {
     try {
       final token = await AuthService.getToken();
@@ -73,6 +74,7 @@ class PostService {
       request.headers['Authorization'] = 'Bearer $token';
       request.fields['content'] = content;
       request.fields['background_color'] = backgroundColor;
+      request.fields['audience'] = audience; // <-- NOUVEAU
 
       // Cas 1 : une seule image
       if (imageBytes != null) {
@@ -205,6 +207,27 @@ class PostService {
 
       if (response.statusCode == 204 || response.statusCode == 200) {
         return {'success': true};
+      }
+      return {'success': false, 'error': 'Erreur ${response.statusCode}'};
+    } catch (e) {
+      return {'success': false, 'error': 'Erreur réseau : $e'};
+    }
+  }
+    /// Récupère les posts d'un hashtag spécifique
+  static Future<Map<String, dynamic>> getPostsByHashtag(String tag) async {
+    try {
+      final token = await AuthService.getToken();
+      if (token == null) return {'success': false, 'error': 'Non connecté'};
+
+      final response = await http.get(
+        Uri.parse(ApiConfig.postsByHashtag(tag)),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final List data = jsonDecode(response.body);
+        final posts = data.map((json) => Post.fromJson(json)).toList();
+        return {'success': true, 'posts': posts};
       }
       return {'success': false, 'error': 'Erreur ${response.statusCode}'};
     } catch (e) {

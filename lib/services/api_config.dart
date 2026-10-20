@@ -27,6 +27,7 @@ class ApiConfig {
   static String storyDetail(int id) => '$baseUrl/stories/$id/';
   static String storyView(int id) => '$baseUrl/stories/$id/view/';
   static String storyViewers(int id) => '$baseUrl/stories/$id/viewers/';
+  static String postsByHashtag(String tag) => '$baseUrl/posts/hashtags/$tag/';
 
   // Clés de stockage local
   static const String tokenKey = 'access_token';

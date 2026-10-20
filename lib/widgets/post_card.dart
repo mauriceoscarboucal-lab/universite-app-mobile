@@ -9,6 +9,9 @@ import '../screens/user_profile_screen.dart';
 import '../services/api_config.dart';
 import '../theme/app_theme.dart';
 import 'user_avatar.dart';
+import 'package:flutter/gestures.dart';
+import '../services/user_service.dart'; // Pour chercher l'utilisateur
+import '../screens/hashtag_screen.dart';
 
 class PostCard extends StatefulWidget {
   final Post post;
@@ -207,7 +210,20 @@ class _PostCardState extends State<PostCard> with SingleTickerProviderStateMixin
                     children: [
                       // NOM SANS BADGE VÉRIFIÉ
                       Text(post.authorUsername, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-                      Text(timeAgo, style: const TextStyle(color: AppTheme.textGrey, fontSize: 12)),
+                      Row(
+                        children: [
+                          Text(timeAgo, style: const TextStyle(color: AppTheme.textGrey, fontSize: 12)),
+                          // 🔒 ICÔNE DE CONFIDENTIALITÉ (seulement si c'est MON post)
+                          if (widget.post.isMyPost && widget.post.audience != 'public') ...[
+                            const SizedBox(width: 6),
+                            Icon(
+                              widget.post.audience == 'followers' ? Icons.people : Icons.lock,
+                              size: 14,
+                              color: AppTheme.textGrey,
+                            ),
+                          ]
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -237,11 +253,11 @@ class _PostCardState extends State<PostCard> with SingleTickerProviderStateMixin
             ),
           ),
 
-          // ─── TEXTE ───
+          // ─── TEXTE (avec hashtags et mentions cliquables) ───
           if (post.content.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Text(post.content, style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.4)),
+              child: _buildClickableText(post.content),
             ),
 
           const SizedBox(height: 12),
@@ -491,6 +507,105 @@ class _PostCardState extends State<PostCard> with SingleTickerProviderStateMixin
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(result['error'] ?? 'Erreur lors de la suppression')),
+      );
+    }
+  }
+  Widget _buildClickableText(String text) {
+    final List<InlineSpan> spans = [];
+    // Détecte les mots qui commencent par # ou @
+    final RegExp regex = RegExp(r'([#@][a-zA-Z0-9_À-ÿ]+)'); 
+    int lastMatchEnd = 0;
+
+    for (final Match match in regex.allMatches(text)) {
+      // Ajoute le texte normal avant le tag
+      if (match.start > lastMatchEnd) {
+        spans.add(TextSpan(
+          text: text.substring(lastMatchEnd, match.start),
+          style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.4),
+        ));
+      }
+
+      // Ajoute le tag cliquable
+      final String tag = match.group(0)!;
+      final bool isHashtag = tag.startsWith('#');
+      
+      spans.add(TextSpan(
+        text: tag,
+        style: const TextStyle(
+          color: AppTheme.goldYellow, // 🟡 Jaune doré
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+          height: 1.4,
+        ),
+        recognizer: TapGestureRecognizer()
+          ..onTap = () {
+            if (isHashtag) {
+              // Navigation vers le hashtag
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => HashtagScreen(tag: tag.substring(1)),
+                ),
+              );
+            } else {
+              // Navigation vers le profil mentionné
+              _goToUserProfile(tag.substring(1));
+            }
+          },
+      ));
+
+      lastMatchEnd = match.end;
+    }
+
+    // Ajoute le reste du texte
+    if (lastMatchEnd < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(lastMatchEnd),
+        style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.4),
+      ));
+    }
+
+    return RichText(
+      text: TextSpan(children: spans),
+    );
+  }
+
+  // 🔍 Aller au profil (insensible à la casse)
+    Future<void> _goToUserProfile(String username) async {
+    // Affiche un petit loader pendant la recherche
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Recherche de @$username...'),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+
+    final result = await UserService.searchUsers(username);
+    if (!mounted) return;
+    
+    if (result['success'] == true && (result['users'] as List).isNotEmpty) {
+      final List users = result['users'];
+      
+      // On cherche la correspondance exacte (insensible à la casse)
+      dynamic match;
+      try {
+        match = users.firstWhere(
+          (u) => u.username.toLowerCase() == username.toLowerCase(),
+        );
+      } catch (_) {
+        // Si pas de correspondance exacte, on prend le premier résultat
+        match = users.first;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => UserProfileScreen(userId: match.id),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Utilisateur @$username introuvable')),
       );
     }
   }

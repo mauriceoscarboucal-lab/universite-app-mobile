@@ -26,7 +26,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   User? _currentUser;
   bool _isLoading = false;
   String? _error;
-  String _audience = 'Public'; // Public, Abonnés, Moi uniquement
+  
+  // ⚠️ On utilise les minuscules pour correspondre au backend
+  String _audience = 'public'; 
 
   @override
   void initState() {
@@ -73,11 +75,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   void _addHashtag(String tag) {
     String cleanTag = tag.trim();
     if (cleanTag.isEmpty) return;
-    
-    // Enlever le # s'il est déjà là
-    if (cleanTag.startsWith('#')) {
-      cleanTag = cleanTag.substring(1);
-    }
+    if (cleanTag.startsWith('#')) cleanTag = cleanTag.substring(1);
     
     if (!_hashtags.contains(cleanTag)) {
       setState(() {
@@ -104,7 +102,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       _error = null;
     });
 
-    // On ajoute les hashtags à la fin du texte pour les sauvegarder
     final hashtagsString = _hashtags.map((t) => '#$t').join(' ');
     final finalContent = content + (hashtagsString.isNotEmpty ? '\n\n$hashtagsString' : '');
 
@@ -113,6 +110,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       multipleImages: _imageBytesList.isEmpty ? null : _imageBytesList,
       multipleNames: _imageBytesList.isEmpty ? null : _pickedImages.map((e) => e.name).toList(),
       backgroundColor: '',
+      audience: _audience, // <-- Envoie l'audience
     );
 
     if (!mounted) return;
@@ -191,22 +189,42 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
-                            value: _audience,
+                            value: _audience, // <-- Doit correspondre à une valeur des items
                             dropdownColor: AppTheme.darkCard,
                             style: const TextStyle(color: Colors.white, fontSize: 12),
                             icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 16),
-                            items: ['Public', 'Abonnés', 'Moi uniquement'].map((String value) {
-                              return DropdownMenuItem<String>(
-                                value: value,
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'public', 
                                 child: Row(
                                   children: [
-                                    Icon(value == 'Public' ? Icons.public : Icons.lock_outline, size: 14, color: Colors.white),
-                                    const SizedBox(width: 4),
-                                    Text(value),
+                                    Icon(Icons.public, size: 14, color: Colors.white),
+                                    SizedBox(width: 4),
+                                    Text('Public'),
                                   ],
                                 ),
-                              );
-                            }).toList(),
+                              ),
+                              DropdownMenuItem(
+                                value: 'followers', 
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.people, size: 14, color: Colors.white),
+                                    SizedBox(width: 4),
+                                    Text('Abonnés'),
+                                  ],
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: 'private', 
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.lock_outline, size: 14, color: Colors.white),
+                                    SizedBox(width: 4),
+                                    Text('Moi uniquement'),
+                                  ],
+                                ),
+                              ),
+                            ],
                             onChanged: (newValue) {
                               if (newValue != null) setState(() => _audience = newValue);
                             },
@@ -243,7 +261,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
                   const SizedBox(height: 16),
 
-                  // ─── APERÇU DES PHOTOS (Grille avec bouton Ajouter) ───
+                  // ─── APERÇU DES PHOTOS ───
                   if (_imageBytesList.isNotEmpty)
                     GridView.builder(
                       shrinkWrap: true,
@@ -263,7 +281,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                               decoration: BoxDecoration(
                                 color: AppTheme.darkCard,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppTheme.borderGreen, style: BorderStyle.solid),
+                                border: Border.all(color: AppTheme.borderGreen),
                               ),
                               child: const Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -323,9 +341,15 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _buildToolItem(Icons.photo_library_outlined, 'Photo/vidéo', _pickImages),
-                        _buildToolItem(Icons.videocam_outlined, 'Vidéo en direct', () {}),
-                        _buildToolItem(Icons.poll_outlined, 'Sondage', () {}),
-                        _buildToolItem(Icons.more_horiz, 'Plus', () {}),
+                        _buildToolItem(Icons.videocam_outlined, 'Vidéo en direct', () {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bientôt disponible 🚧')));
+                        }),
+                        _buildToolItem(Icons.poll_outlined, 'Sondage', () {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Bientôt disponible 🚧')));
+                        }),
+                        _buildToolItem(Icons.more_horiz, 'Plus', () {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Plus d\'options bientôt 🚧')));
+                        }),
                       ],
                     ),
                   ),
@@ -427,7 +451,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                           tileColor: Colors.transparent,
                           leading: const Icon(Icons.visibility_outlined, color: AppTheme.brightGreen),
                           title: const Text('Qui peut voir cette publication ?', style: TextStyle(color: Colors.white, fontSize: 14)),
-                          subtitle: Text(_audience, style: const TextStyle(color: AppTheme.goldYellow, fontSize: 12)),
+                          subtitle: Text(
+                            _audience == 'public' ? 'Public' : (_audience == 'followers' ? 'Abonnés' : 'Moi uniquement'), 
+                            style: const TextStyle(color: AppTheme.goldYellow, fontSize: 12)
+                          ),
                           trailing: const Icon(Icons.chevron_right, color: AppTheme.textGrey),
                           onTap: () {},
                         ),
@@ -469,7 +496,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   ),
                   child: Ink(
                     decoration: BoxDecoration(
-                      gradient: AppTheme.storyGradient, // Dégradé Jaune -> Vert
+                      gradient: AppTheme.storyGradient,
                       borderRadius: BorderRadius.circular(30),
                       boxShadow: [
                         BoxShadow(
